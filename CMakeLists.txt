@@ -3060,6 +3060,18 @@ register_tap_files(tshark-tap-register.c
 	${TSHARK_TAP_SRC}
 )
 
+set(hanshark_LIBS
+	epan
+	wiretap
+)
+set(hanshark_FILES
+	$<TARGET_OBJECTS:cli_main>
+	$<TARGET_OBJECTS:shark_common>
+	fknet_shark.c
+)
+add_executable(fknet_shark ${hanshark_FILES})
+target_link_libraries(fknet_shark ${hanshark_LIBS})
+
 if(BUILD_tshark)
 	set(tshark_LIBS
 		ui
