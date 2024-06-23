@@ -61,10 +61,12 @@
  * RFC 7291: DHCP Options for the Port Control Protocol (PCP)
  * RFC 7618: Dynamic Allocation of Shared IPv4 Addresses
  * RFC 7710: Captive-Portal Identification Using DHCP or Router Advertisements (RAs)
+ * RFC 7724: Active DHCPv4 Lease Query
  * RFC 7839: Access-Network-Identifier Option in DHCP
  * RFC 8357: Generalized UDP Source Port for DHCP Relay
  * RFC 8910: Captive-Portal Identification in DHCP and Router Advertisements (RAs)
  * RFC 8925: IPv6-Only Preferred Option for DHCPv4
+ * RFC 8973: DDoS Open Threat Signaling (DOTS) Agent Discovery
  * draft-ietf-dhc-fqdn-option-07.txt
  * TFTP Server Address Option for DHCPv4 [draft-raj-dhc-tftp-addr-option-06.txt: https://tools.ietf.org/html/draft-raj-dhc-tftp-addr-option-06]
  * BOOTP and DHCP Parameters
@@ -622,6 +624,8 @@ static int hf_dhcp_option_rdnss_pref;				/* 146 */
 static int hf_dhcp_option_rdnss_prim_dns_server;			/* 146 */
 static int hf_dhcp_option_rdnss_sec_dns_server;			/* 146 */
 static int hf_dhcp_option_rdnss_domain;				/* 146 */
+static int hf_dhcp_option_dots_ri;				/* 147 */
+static int hf_dhcp_option_dots_address;				/* 148 */
 static int hf_dhcp_option_tftp_server_address;			/* 150 */
 static int hf_dhcp_option_bulk_lease_status_code;			/* 151 */
 static int hf_dhcp_option_bulk_lease_status_message;		/* 151 */
@@ -639,6 +643,7 @@ static int hf_dhcp_option_portparams_psid;				/* 159 */
 static int hf_dhcp_option_mudurl;					/* 161 */
 static int hf_dhcp_option_pxe_config_file;				/* 209 */
 static int hf_dhcp_option_pxe_path_prefix;				/* 210 */
+static int hf_dhcp_option_pxe_reboot_time;				/* 211 */
 static int hf_dhcp_option_6RD_ipv4_mask_len;			/* 212 */
 static int hf_dhcp_option_6RD_prefix_len;				/* 212 */
 static int hf_dhcp_option_6RD_prefix;				/* 212 */
@@ -981,6 +986,10 @@ static const value_string bulk_lease_dhcp_status_code_vals[] = {
 	{ 2, "QueryTerminated" },
 	{ 3, "MalformedQuery" },
 	{ 4, "NotAllowed" },
+	{ 5, "DataMissing" },
+	{ 6, "ConnectionActive" },
+	{ 7, "CatchUpComplete" },
+	{ 8, "TLSConnectionRefused" },
 	{ 0, NULL },
 };
 
@@ -1417,7 +1426,7 @@ static const string_string option242_avaya_static_vals[] = {
 #define DHCP_OPT_NUM	256
 
 /* All of the options that have a "basic" type that can be handled by dissect_dhcpopt_basic_type() */
-#define DHCP_OPTION_BASICTYPE_RANGE "1-20,22-32,34-42,44-51,53-54,56-59,64-76,86-87,91-92,100-101,108,112-113,116,118,136-138,142,150,153,156-157,161,209-210,252"
+#define DHCP_OPTION_BASICTYPE_RANGE "1-20,22-32,34-42,44-51,53-54,56-59,62,64-76,86-87,91-92,100-101,108,112-113,116,118,136-138,142,147-148,150,153,156-157,161,209-211,252"
 
 /* Re-define structure.	 Values to be updated by dhcp_init_protocol */
 static struct opt_info dhcp_opt[DHCP_OPT_NUM];
@@ -1570,8 +1579,8 @@ static const struct opt_info default_dhcp_opt[DHCP_OPT_NUM] = {
 /* 144 */ { "Geospatial Location [TODO:RFC6225]",	opaque, NULL },
 /* 145 */ { "Forcerenew Nonce Capable",			special, NULL },
 /* 146 */ { "RDNSS Selection",				special, NULL },
-/* 147 */ { "Unassigned",				opaque, NULL },
-/* 148 */ { "Unassigned",				opaque, NULL },
+/* 147 */ { "DOTS Reference Identifier",		string, &hf_dhcp_option_dots_ri },
+/* 148 */ { "DOTS Address",				ipv4_list, &hf_dhcp_option_dots_address },
 /* 149 */ { "Unassigned",				opaque, NULL },
 /* 150 */ { "TFTP Server Address",			ipv4_list, &hf_dhcp_option_tftp_server_address },
 /* 151 */ { "Leasequery Status code",			special, NULL },
@@ -1634,7 +1643,7 @@ static const struct opt_info default_dhcp_opt[DHCP_OPT_NUM] = {
 /* 208 */ { "PXELINUX Magic",				opaque, NULL },
 /* 209 */ { "PXE Configuration file",			string, &hf_dhcp_option_pxe_config_file },
 /* 210 */ { "PXE Path Prefix",				string, &hf_dhcp_option_pxe_path_prefix },
-/* 211 */ { "Reboot Time",				opaque, NULL },
+/* 211 */ { "Reboot Time",				time_in_u_secs, &hf_dhcp_option_pxe_reboot_time },
 /* 212 */ { "6RD",					opaque, NULL },
 /* 213 */ { "V4 Access Domain",				opaque, NULL },
 /* 214 */ { "Unassigned",				opaque, NULL },
@@ -9963,6 +9972,16 @@ proto_register_dhcp(void)
 		    FT_STRING, BASE_NONE, NULL, 0x00,
 		    "RDNSS Domains and networks", HFILL }},
 
+		{ &hf_dhcp_option_dots_ri,
+		  { "DOTS Reference Identifier", "dhcp.option.dots.ri",
+		    FT_STRING, BASE_NONE, NULL, 0x00,
+		    "Peer DOTS Agent name", HFILL }},
+
+		{ &hf_dhcp_option_dots_address,
+		  { "DOTS Address", "dhcp.option.dots.address",
+		    FT_IPv4, BASE_NONE, NULL, 0x00,
+		    "Peer DOTS Agent Address", HFILL }},
+
 		{ &hf_dhcp_option_tftp_server_address,
 		  { "TFTP Server Address", "dhcp.option.tftp_server_address",
 		    FT_IPv4, BASE_NONE, NULL, 0x00,
@@ -10047,6 +10066,11 @@ proto_register_dhcp(void)
 		  { "PXELINUX path prefix", "dhcp.option.pxe_path_prefix",
 		    FT_STRING, BASE_NONE, NULL, 0x0,
 		    "Option 210: PXE Path Prefix", HFILL }},
+
+		{ &hf_dhcp_option_pxe_reboot_time,
+		  { "PXELINUX Reboot Time", "dhcp.option.pxe_reboot_time",
+		    FT_UINT32, BASE_CUSTOM, CF_FUNC(dhcp_time_in_u_secs_fmt), 0x0,
+		    "Option 211: PXE Reboot Time", HFILL }},
 
 		{ &hf_dhcp_option_captive_portal,
 		  { "Captive Portal", "dhcp.option.captive_portal",
