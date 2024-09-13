@@ -15,6 +15,7 @@
 #include <epan/strutil.h>
 #include <epan/asn1.h>
 #include <epan/expert.h>
+#include <wsutil/array.h>
 
 #include "packet-ber.h"
 
@@ -42,8 +43,8 @@ static dissector_handle_t data_handle;
 /* Global variables */
 static rose_ctx_t *rose_ctx_tmp;
 
-static guint32 problem_val;
-static gchar problem_str[64];
+static uint32_t problem_val;
+static char problem_str[64];
 static tvbuff_t *arg_next_tvb, *res_next_tvb, *err_next_tvb;
 
 
@@ -68,7 +69,7 @@ void proto_register_q932_ros(void) {
   };
 
   /* List of subtrees */
-  static gint *ett[] = {
+  static int *ett[] = {
 #include "packet-q932-ros-ettarr.c"
   };
 

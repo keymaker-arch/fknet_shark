@@ -559,6 +559,9 @@ void TCPStreamDialog::fillGraph(bool reset_axes, bool set_focus)
     sp->yAxis2->setVisible(false);
     sp->yAxis2->setLabel(QString());
 
+    /* For graphs other than receive window, the axes are not in sync. */
+    disconnect(sp->yAxis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), sp->yAxis2, QOverload<const QCPRange&>::of(&QCPAxis::setRange));
+
     if (!cap_file_) {
         QString dlg_title = QString(tr("No Capture Data"));
         setWindowTitle(dlg_title);
@@ -1590,6 +1593,10 @@ void TCPStreamDialog::fillWindowScale()
     QVector<double> rel_time, win_size;
     QVector<double> cwnd_time, cwnd_size;
     uint32_t last_ack = 0;
+
+    /* highest expected SEQ seen so far */
+    uint32_t max_next_seq = 0;
+
     bool found_first_ack = false;
     for (struct segment *seg = graph_.segments; seg != NULL; seg = seg->next) {
         double ts = seg->rel_secs + seg->rel_usecs / 1000000.0;
@@ -1597,12 +1604,17 @@ void TCPStreamDialog::fillWindowScale()
         // The receive window that applies to this flow comes
         //   from packets in the opposite direction
         if (compareHeaders(seg)) {
-            // compute bytes_in_flight for cwnd graph
+            /* compute bytes_in_flight for cwnd graph,
+             * by comparing the highest next SEQ to the latest ACK
+             */
             uint32_t end_seq = seg->th_seq + seg->th_seglen;
+            if(end_seq > max_next_seq) {
+                max_next_seq = end_seq;
+            }
             if (found_first_ack &&
                 tcp_seq_eq_or_after(end_seq, last_ack)) {
                 cwnd_time.append(ts - ts_offset_);
-                cwnd_size.append((double)(end_seq - last_ack));
+                cwnd_size.append((double)(max_next_seq - last_ack));
             }
         } else {
             // packet in opposite direction - has advertised rwin
@@ -1625,16 +1637,24 @@ void TCPStreamDialog::fillWindowScale()
     /* base_graph_ is the one that the tracer is on and allows selecting
      * segments. XXX - Is the congestion window more interesting to see
      * the exact value and select?
+     *
+     * We'll put the graphs on the same axis so they'll use the same scale.
      */
     base_graph_->setData(cwnd_time, cwnd_size);
-    rwin_graph_->setValueAxis(sp->yAxis2);
+    rwin_graph_->setValueAxis(sp->yAxis);
     rwin_graph_->setData(rel_time, win_size);
-    sp->yAxis->setLabel(cwnd_label_);
 
+    /* The left axis has the color and label for the unacked bytes,
+     * and the right axis will have the color and label for the window size.
+     */
+    sp->yAxis->setLabel(cwnd_label_);
     sp->yAxis2->setLabel(window_size_label_);
     sp->yAxis2->setLabelColor(QColor(graph_color_3));
     sp->yAxis2->setTickLabelColor(QColor(graph_color_3));
     sp->yAxis2->setVisible(true);
+
+    /* Keep the ticks on the two axes in sync. */
+    connect(sp->yAxis, QOverload<const QCPRange&>::of(&QCPAxis::rangeChanged), sp->yAxis2, QOverload<const QCPRange&>::of(&QCPAxis::setRange));
 }
 
 QString TCPStreamDialog::streamDescription()

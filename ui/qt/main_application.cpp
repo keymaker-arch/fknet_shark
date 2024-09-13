@@ -293,7 +293,8 @@ QDir MainApplication::openDialogInitialDir() {
 
 void MainApplication::setLastOpenDirFromFilename(const QString file_name)
 {
-    QString directory = QFileInfo(file_name).absolutePath();
+    /* XXX - Use canonicalPath() instead of absolutePath()? */
+    QString directory = QDir::toNativeSeparators(QFileInfo(file_name).absolutePath());
     /* XXX - printable? */
     set_last_open_dir(qUtf8Printable(directory));
 }
@@ -303,7 +304,7 @@ void MainApplication::helpTopicAction(topic_action_e action)
     QString url = gchar_free_to_qstring(topic_action_url(action));
 
     if (!url.isEmpty()) {
-        QDesktopServices::openUrl(QUrl(url));
+        QDesktopServices::openUrl(QUrl(QDir::fromNativeSeparators(url)));
     }
 }
 
@@ -466,10 +467,8 @@ void MainApplication::setConfigurationProfile(const char *profile_name, bool wri
     /* Apply new preferences */
     readConfigurationFiles(true);
 
-    /* Should we reapply command line options now or drop them (so that
-     * they don't get reapplied later, e.g. when reloading Lua plugins)?
-     */
-    commandline_options_free();
+    /* Apply command-line preferences */
+    commandline_options_reapply();
     extcap_register_preferences();
 
     /* Switching profile requires reloading the macro list. */

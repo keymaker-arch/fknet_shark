@@ -28,18 +28,6 @@ typedef struct {
 	range_t *packet_range;
 } uat_plen_record_t;
 
-static range_t default_range[10] = {
-	{1, {{0, 19}}},
-	{1, {{20, 39}}},
-	{1, {{40, 79}}},
-	{1, {{80, 159}}},
-	{1, {{160, 319}}},
-	{1, {{320, 639}}},
-	{1, {{640, 1279}}},
-	{1, {{1280, 2559}}},
-	{1, {{2560, 5119}}},
-	{1, {{5120, 0xFFFFFFFF}}}
-};
 static uat_plen_record_t *uat_plen_records;
 static uat_t *plen_uat;
 static unsigned num_plen_uat;
@@ -77,16 +65,31 @@ static void uat_plen_record_free_cb(void*r) {
 }
 
 static void uat_plen_record_post_update_cb(void) {
-	unsigned i;
-	uat_plen_record_t rec;
-
 	/* If there are no records, create default list */
 	if (num_plen_uat == 0) {
+		static const char * const default_range[] = {
+			"0-19",
+			"20-39",
+			"40-79",
+			"80-159",
+			"160-319",
+			"320-639",
+			"640-1279",
+			"1280-2559",
+			"2560-5119",
+			"5120-0xFFFFFFFF"
+		};
+		unsigned i;
+
 		/* default values for packet lengths */
 		for (i = 0; i < array_length(default_range); i++)
 		{
-			rec.packet_range = &default_range[i];
+			uat_plen_record_t rec;
+
+			convert_ret_t result = range_convert_str(NULL, &rec.packet_range, default_range[i], UINT32_MAX);
+			ws_assert(result == CVT_NO_ERROR);
 			uat_add_record(plen_uat, &rec, true);
+			wmem_free(NULL, rec.packet_range);
 		}
 	}
 }
@@ -141,7 +144,7 @@ static void ip_srcdst_stats_tree_init(stats_tree *st,
 	*st_node_src_ptr = stats_tree_create_node(st, st_str_src, 0, STAT_DT_INT, true);
 	/* set flag so this branch will always be sorted to top of tree */
 	stat_node_set_flags(st, st_str_src, 0, false, ST_FLG_SORT_TOP);
-	/* creat another top level node for destination branch */
+	/* create another top level node for destination branch */
 	*st_node_dst_ptr = stats_tree_create_node(st, st_str_dst, 0, STAT_DT_INT, true);
 	/* set flag so this branch will not be expanded by default */
 	stat_node_set_flags(st, st_str_dst, 0, false, ST_FLG_DEF_NOEXPAND);

@@ -109,7 +109,7 @@ static bool parse_line(char *linebuff, int line_length,
                            long *data_offset,
                            int *data_chars,
                            packet_direction_t *direction,
-                           int *encap, int *is_comment, int *is_sprint,
+                           int *encap, bool *is_comment, bool *is_sprint,
                            char *aal_header_chars,
                            char *context_name, uint8_t *context_portp,
                            char *protocol_name, char *variant_name,
@@ -140,8 +140,8 @@ static void set_isdn_info(union wtap_pseudo_header *pseudo_header,
 static void set_ppp_info(union wtap_pseudo_header *pseudo_header,
                          packet_direction_t direction);
 
-static int packet_offset_equal(gconstpointer v, gconstpointer v2);
-static unsigned packet_offset_hash_func(gconstpointer v);
+static int packet_offset_equal(const void *v, const void *v2);
+static unsigned packet_offset_hash_func(const void *v);
 
 static bool get_file_time_stamp(const char *linebuff, time_t *secs, uint32_t *usecs);
 static gboolean free_line_prefix_info(void *key, void *value, void *user_data);
@@ -349,8 +349,8 @@ catapult_dct2000_read(wtap *wth, wtap_rec *rec, Buffer *buf,
     /* Search for a line containing a usable packet */
     while (1) {
         int line_length, seconds, useconds, data_chars;
-        int is_comment = false;
-        int is_sprint = false;
+        bool is_comment = false;
+        bool is_sprint = false;
         int64_t this_offset;
         static char linebuff[MAX_LINE_LENGTH+1];
         char aal_header_chars[AAL_HEADER_CHARS];
@@ -448,8 +448,8 @@ catapult_dct2000_seek_read(wtap *wth, int64_t seek_off,
     char protocol_name[MAX_PROTOCOL_NAME+1];
     char variant_name[MAX_VARIANT_DIGITS+1];
     char outhdr_name[MAX_OUTHDR_NAME+1];
-    int  is_comment = false;
-    int  is_sprint = false;
+    bool is_comment = false;
+    bool is_sprint = false;
     packet_direction_t direction;
     int encap;
     int seconds, useconds, data_chars;
@@ -820,7 +820,7 @@ parse_line(char *linebuff, int line_length,
            long *before_time_offset, long *after_time_offset,
            long *data_offset, int *data_chars,
            packet_direction_t *direction,
-           int *encap, int *is_comment, int *is_sprint,
+           int *encap, bool *is_comment, bool *is_sprint,
            char *aal_header_chars,
            char *context_name, uint8_t *context_portp,
            char *protocol_name, char *variant_name,
@@ -838,7 +838,7 @@ parse_line(char *linebuff, int line_length,
     int  seconds_chars;
     char subsecond_decimals_buff[MAX_SUBSECOND_DECIMALS+1];
     int  subsecond_decimals_chars;
-    int  skip_first_byte = false;
+    bool skip_first_byte = false;
     bool atm_header_present = false;
 
     *is_comment = false;
@@ -1560,7 +1560,7 @@ char_from_hex(uint8_t hex)
 /* Equality test for packet prefix hash tables */
 /***********************************************/
 static int
-packet_offset_equal(gconstpointer v, gconstpointer v2)
+packet_offset_equal(const void *v, const void *v2)
 {
     /* Dereferenced pointers must have same int64_t offset value */
     return (*(const int64_t*)v == *(const int64_t*)v2);
@@ -1571,7 +1571,7 @@ packet_offset_equal(gconstpointer v, gconstpointer v2)
 /* Hash function for packet-prefix hash table */
 /********************************************/
 static unsigned
-packet_offset_hash_func(gconstpointer v)
+packet_offset_hash_func(const void *v)
 {
     /* Use low-order bits of int64_t offset value */
     return (unsigned)(*(const int64_t*)v);

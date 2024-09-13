@@ -579,7 +579,7 @@ void commandline_other_options(int argc, char *argv[], bool opt_reset)
                 global_commandline_info.jump_backwards = SD_BACKWARD;
                 break;
             case 'g':        /* Go to packet with the given packet number */
-                global_commandline_info.go_to_packet = get_nonzero_guint32(ws_optarg, "go to packet");
+                global_commandline_info.go_to_packet = get_nonzero_uint32(ws_optarg, "go to packet");
                 break;
             case 'J':        /* Jump to the first packet which matches the filter criteria */
                 global_commandline_info.jfilter = ws_optarg;
@@ -800,7 +800,7 @@ void commandline_other_options(int argc, char *argv[], bool opt_reset)
 }
 
 /* Local function used by commandline_options_drop */
-static int cl_find_custom(gconstpointer elem_data, gconstpointer search_data) {
+static int cl_find_custom(const void *elem_data, const void *search_data) {
     return memcmp(elem_data, search_data, strlen((char *)search_data));
 }
 
@@ -816,7 +816,7 @@ void commandline_options_drop(const char *module_name, const char *pref_name) {
     opt_prefix = ws_strdup_printf("%s.%s:", module_name, pref_name);
 
     while (NULL != (elem = g_slist_find_custom(global_commandline_info.user_opts,
-                        (gconstpointer)opt_prefix, cl_find_custom))) {
+                        (const void *)opt_prefix, cl_find_custom))) {
         global_commandline_info.user_opts =
                 g_slist_remove_link(global_commandline_info.user_opts, elem);
         g_free(elem->data);
@@ -845,6 +845,41 @@ void commandline_options_reapply(void) {
         if (errmsg != NULL) {
             g_free(errmsg);
             errmsg = NULL;
+        }
+    }
+}
+
+void commandline_options_apply_extcap(void) {
+    char *errmsg = NULL;
+    GSList *entry = NULL;
+
+    if (prefs.capture_no_extcap)
+        return;
+
+    for (entry = global_commandline_info.user_opts; entry != NULL; entry = g_slist_next(entry)) {
+        if (g_str_has_prefix((char *)entry->data, "extcap.")) {
+            switch (prefs_set_pref(ws_optarg, &errmsg)) {
+                case PREFS_SET_OK:
+                    break;
+                case PREFS_SET_SYNTAX_ERR:
+                    cmdarg_err("Invalid -o flag \"%s\"%s%s", ws_optarg,
+                            errmsg ? ": " : "", errmsg ? errmsg : "");
+                    g_free(errmsg);
+                    exit_application(1);
+                    break;
+                case PREFS_SET_NO_SUCH_PREF:
+                    cmdarg_err("-o flag \"%s\" specifies unknown preference/recent value",
+                               ws_optarg);
+                    exit_application(1);
+                    break;
+                case PREFS_SET_OBSOLETE:
+                    cmdarg_err("-o flag \"%s\" specifies obsolete preference",
+                               ws_optarg);
+                    exit_application(1);
+                    break;
+                default:
+                    ws_assert_not_reached();
+            }
         }
     }
 }

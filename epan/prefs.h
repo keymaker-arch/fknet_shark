@@ -32,8 +32,8 @@ extern "C" {
 #define TAP_UPDATE_DEFAULT_INTERVAL 3000
 #define ST_DEF_BURSTRES 5
 #define ST_DEF_BURSTLEN 100
-#define ST_MAX_BURSTRES 600000 /* somewhat arbirary limit of 10 minutes */
-#define ST_MAX_BURSTBUCKETS 100 /* somewhat arbirary limit - more buckets degrade performance */
+#define ST_MAX_BURSTRES 600000 /* somewhat arbitrary limit of 10 minutes */
+#define ST_MAX_BURSTBUCKETS 100 /* somewhat arbitrary limit - more buckets degrade performance */
 #define DEF_GUI_DECIMAL_PLACES1 2
 #define DEF_GUI_DECIMAL_PLACES2 4
 #define DEF_GUI_DECIMAL_PLACES3 6
@@ -65,6 +65,7 @@ char string_to_name_resolve(const char *string, struct _e_addr_resolve *name_res
  */
 #define FO_STYLE_LAST_OPENED    0 /* start in last directory we looked at */
 #define FO_STYLE_SPECIFIED      1 /* start in specified directory */
+#define FO_STYLE_CWD            2 /* start in current working directory at startup */
 
 /*
  * Toolbar styles.
@@ -135,6 +136,19 @@ typedef enum {
     ELIDE_NONE
 } elide_mode_e;
 
+typedef enum {
+    COPY_FORMAT_TEXT,
+    COPY_FORMAT_CSV,
+    COPY_FORMAT_YAML,
+    COPY_FORMAT_HTML
+} copy_format_e;
+
+typedef enum {
+    ABS_TIME_ASCII_NEVER,
+    ABS_TIME_ASCII_TREE,
+    ABS_TIME_ASCII_COLUMN,
+    ABS_TIME_ASCII_ALWAYS,
+} abs_time_format_e;
 
 /*
  * Update channel.
@@ -216,6 +230,7 @@ typedef struct _e_prefs {
   unsigned     tap_update_interval;
   bool         display_hidden_proto_items;
   bool         display_byte_fields_with_spaces;
+  abs_time_format_e display_abs_time_ascii;
   bool         enable_incomplete_dissectors_check;
   bool         incomplete_dissectors_check_debug;
   bool         strict_conversation_tracking_heuristics;
@@ -236,6 +251,8 @@ typedef struct _e_prefs {
   bool         gui_show_selected_packet;
   bool         gui_show_file_load_time;
   elide_mode_e gui_packet_list_elide_mode;
+  copy_format_e gui_packet_list_copy_format_options_for_keyboard_shortcut;
+  bool         gui_packet_list_copy_text_with_aligned_columns;
   bool         gui_packet_list_show_related;
   bool         gui_packet_list_show_minimap;
   bool         gui_packet_list_sortable;
@@ -754,10 +771,12 @@ void prefs_register_custom_preference(module_t *module, const char *name,
  * @param var pointer to the storage location that is updated when the
  *                    field is changed in the preference dialog box.
  * @param max_value the maximum allowed value for a range (0 is the minimum)
+ * @param dissector_table the name of the dissector table
+ * @param dissector_description the handle description
  */
 void prefs_register_decode_as_range_preference(module_t *module, const char *name,
     const char *title, const char *description, range_t **var,
-    uint32_t max_value);
+    uint32_t max_value, const char *dissector_table, const char *dissector_description);
 
 /**
  * Register a preference with an password (password is never stored).

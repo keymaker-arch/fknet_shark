@@ -5,7 +5,7 @@
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 '''\
-convert-glib-types.py - Convert glib types to their C and C99 eqivalents.
+convert-glib-types.py - Convert glib types to their C and C99 equivalents.
 '''
 
 # Imports
@@ -22,6 +22,8 @@ type_map = {
     'gboolean': 'bool',
     'gchar': 'char',
     'guchar': 'unsigned char',
+    'gshort': 'int16_t',
+    'gushort': 'uint16_t',
     'gint': 'int',
     'guint': 'unsigned', # Matches README.developer
     # Our remaining glong instances probably shouldn't be converted, e.g.
@@ -40,6 +42,10 @@ type_map = {
     'gdouble': 'double',
     'gpointer ': 'void *', # 'void *foo' instead of 'void * foo'
     'gpointer': 'void *',
+    'gconstpointer ': 'const void *', # 'void *foo' instead of 'void * foo'
+    'gconstpointer': 'const void *',
+    'gintptr': 'intptr_t',
+    'guintptr': 'uintptr_t',
     # Is gsize the same as size_t on the platforms we support?
     # https://gitlab.gnome.org/GNOME/glib/-/issues/2493
     'gsize': 'size_t',
@@ -80,6 +86,33 @@ format_spec_map = {
     'G_GUINT64_FORMAT': 'PRIu64',
 }
 
+api_map = {
+    'tvb_get_guint8': 'tvb_get_uint8',
+    'tvb_get_gint8': 'tvb_get_int8',
+    'tvb_get_guint16': 'tvb_get_uint16',
+    'tvb_get_gint16': 'tvb_get_int16',
+    'tvb_get_guint24': 'tvb_get_uint24',
+    'tvb_get_gint24': 'tvb_get_int24',
+    'tvb_get_guint32': 'tvb_get_uint32',
+    'tvb_get_gint32': 'tvb_get_int32',
+    'tvb_get_guint40': 'tvb_get_uint40',
+    'tvb_get_gint40': 'tvb_get_int40',
+    'tvb_get_guint48': 'tvb_get_uint48',
+    'tvb_get_gint48': 'tvb_get_int48',
+    'tvb_get_guint56': 'tvb_get_uint56',
+    'tvb_get_gint56': 'tvb_get_int56',
+    'tvb_get_guint64': 'tvb_get_uint64',
+    'tvb_get_gint64': 'tvb_get_int64',
+    'tvb_find_guint8': 'tvb_find_uint8',
+    'tvb_find_guint16': 'tvb_find_uint16',
+    'tvb_ws_mempbrk_pattern_guint8': 'tvb_ws_mempbrk_pattern_uint8',
+    'guint32_to_str_buf': 'uint32_to_str_buf',
+    'guint64_to_str_buf': 'uint64_to_str_buf',
+    'get_nonzero_guint32': 'get_nonzero_uint32',
+    'get_guint32': 'get_uint32',
+    'guint8_to_hex': 'uint8_to_hex',
+}
+
 def convert_file(file):
     lines = ''
     try:
@@ -95,13 +128,15 @@ def convert_file(file):
                 lines = re.sub(rf'\b{glib_tf_define}\b([^\'"])', rf'{c99_define}\1', lines, flags=re.MULTILINE)
             for glib_fmt_spec, c99_fmt_spec in format_spec_map.items():
                 lines = re.sub(rf'\b{glib_fmt_spec}\b', rf'{c99_fmt_spec}', lines, flags=re.MULTILINE)
+            for glib_api, c99_api in api_map.items():
+                lines = re.sub(rf'\b{glib_api}\b', rf'{c99_api}', lines, flags=re.MULTILINE)
     except IsADirectoryError:
         sys.stderr.write(f'{file} is a directory.\n')
         return
     except UnicodeDecodeError:
         sys.stderr.write(f"{file} isn't valid UTF-8.\n")
         return
-    except:
+    except Exception:
         sys.stderr.write(f'Unable to open {file}.\n')
         return
 
@@ -110,11 +145,11 @@ def convert_file(file):
     print(f'Converted {file}')
 
 def main():
-    parser = argparse.ArgumentParser(description='Convert glib types to their C and C99 eqivalents.')
+    parser = argparse.ArgumentParser(description='Convert glib types to their C and C99 equivalents.')
     parser.add_argument('files', metavar='FILE', nargs='*')
     args = parser.parse_args()
 
-    # Build a padded version of type_map which attempts to preseve alignment
+    # Build a padded version of type_map which attempts to preserve alignment
     for glib_type, c99_type in type_map.items():
         pg_type = glib_type + '  '
         pc_type = c99_type + ' '

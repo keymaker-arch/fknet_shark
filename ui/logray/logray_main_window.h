@@ -218,11 +218,12 @@ private:
     void setMenusForFileSet(bool enable_list_files);
     void setWindowIcon(const QIcon &icon);
     QString replaceWindowTitleVariables(QString title);
+    void updateStyleSheet();
 
     void externalMenuHelper(ext_menu_t * menu, QMenu  * subMenu, int depth);
 
     void setForCaptureInProgress(bool capture_in_progress = false, bool handle_toolbars = false, GArray *ifaces = NULL);
-    QMenu* findOrAddMenu(QMenu *parent_menu, QString& menu_text);
+    QMenu* findOrAddMenu(QMenu *parent_menu, const QStringList& menu_parts);
 
     void captureFileReadStarted(const QString &action);
 

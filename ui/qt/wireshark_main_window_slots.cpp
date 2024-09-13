@@ -19,7 +19,7 @@
 
 /*
  * The generated Ui_WiresharkMainWindow::setupUi() can grow larger than our configured limit,
- * so turn off -Wframe-larger-than= for ui_main_window.h.
+ * so turn off -Wframe-larger-than= for ui_wireshark_main_window.h.
  */
 DIAG_OFF(frame-larger-than=)
 #include <ui_wireshark_main_window.h>
@@ -366,6 +366,16 @@ void WiresharkMainWindow::layoutToolbars()
     }
 }
 
+static const char* layout_icons[] = {
+    NULL,
+    "x-reset-layout_5",
+    "x-reset-layout_2",
+    "x-reset-layout_1",
+    "x-reset-layout_4",
+    "x-reset-layout_3",
+    "x-reset-layout_6"
+};
+
 void WiresharkMainWindow::updatePreferenceActions()
 {
     main_ui_->actionViewPacketList->setEnabled(prefs_has_layout_pane_content(layout_pane_content_plist));
@@ -376,6 +386,9 @@ void WiresharkMainWindow::updatePreferenceActions()
     main_ui_->actionViewNameResolutionPhysical->setChecked(gbl_resolv_flags.mac_name);
     main_ui_->actionViewNameResolutionNetwork->setChecked(gbl_resolv_flags.network_name);
     main_ui_->actionViewNameResolutionTransport->setChecked(gbl_resolv_flags.transport_name);
+
+    if (prefs.gui_layout_type > 0)
+        main_ui_->actionViewResetLayout->setIcon(StockIcon(layout_icons[prefs.gui_layout_type]));
 }
 
 void WiresharkMainWindow::updateRecentActions()
@@ -990,7 +1003,7 @@ void WiresharkMainWindow::pushLiveCaptureInProgress() {
     if (capture_opts->save_file)
         msgtip += capture_opts->save_file;
     mainApp->pushStatus(WiresharkApplication::FileStatus, msg, msgtip);
-    g_string_free(interface_names, true);
+    g_string_free(interface_names, TRUE);
 #endif // HAVE_LIBPCAP
 }
 
@@ -1056,7 +1069,9 @@ void WiresharkMainWindow::updateRecentCaptures() {
 
     /* Iterate through the actions in menuOpenRecentCaptureFile,
      * removing special items, a maybe duplicate entry and every item above count_max */
+#if defined(Q_OS_MAC)
     int shortcut = Qt::Key_0;
+#endif
     foreach(recent_item_status *ri, mainApp->recentItems()) {
         // Add the new item
         ra = new QAction(recentMenu);
@@ -1065,10 +1080,12 @@ void WiresharkMainWindow::updateRecentCaptures() {
         ra->setEnabled(ri->accessible);
         recentMenu->insertAction(NULL, ra);
         action_cf_name = ra->data().toString();
+#if defined(Q_OS_MAC)
         if (shortcut <= Qt::Key_9) {
             ra->setShortcut(Qt::META | (Qt::Key)shortcut);
             shortcut++;
         }
+#endif
         ra->setText(action_cf_name);
         connect(ra, &QAction::triggered, this, &WiresharkMainWindow::recentActionTriggered);
 
@@ -1249,14 +1266,16 @@ void WiresharkMainWindow::setMenusForSelectedPacket()
         have_frames = capture_file_.capFile()->count > 0;
         have_marked = capture_file_.capFile()->marked_count > 0;
         another_is_marked = have_marked && rows.count() <= 1 &&
-                !(capture_file_.capFile()->marked_count == 1 && frame_selected && current_frame->marked);
+                !(capture_file_.capFile()->marked_count == 1 && frame_selected &&
+                current_frame && current_frame->marked);
         have_filtered = capture_file_.capFile()->displayed_count > 0 && capture_file_.capFile()->displayed_count != capture_file_.capFile()->count;
         have_ignored = capture_file_.capFile()->ignored_count > 0;
         have_time_ref = capture_file_.capFile()->ref_time_count > 0;
         another_is_time_ref = have_time_ref && rows.count() <= 1 &&
-                !(capture_file_.capFile()->ref_time_count == 1 && frame_selected && current_frame->ref_time);
+                !(capture_file_.capFile()->ref_time_count == 1 && frame_selected &&
+                current_frame && current_frame->ref_time);
 
-        if (capture_file_.capFile()->edt && ! multi_selection)
+        if (capture_file_.capFile()->edt && ! multi_selection && frame_selected)
         {
             proto_get_frame_protocols(capture_file_.capFile()->edt->pi.layers,
                                       &is_ip, &is_tcp, &is_udp, &is_sctp,
@@ -1281,12 +1300,17 @@ void WiresharkMainWindow::setMenusForSelectedPacket()
                     follow_action->setEnabled(is_frame);
                 }
             }
+        } else {
+            foreach (FollowStreamAction *follow_action, main_ui_->menuFollow->findChildren<FollowStreamAction *>()) {
+                follow_action->setEnabled(false);
+            }
         }
     }
 
     main_ui_->actionCopyListAsText->setEnabled(selectedRows().count() > 0);
     main_ui_->actionCopyListAsCSV->setEnabled(selectedRows().count() > 0);
     main_ui_->actionCopyListAsYAML->setEnabled(selectedRows().count() > 0);
+    main_ui_->actionCopyListAsHTML->setEnabled(selectedRows().count() > 0);
 
     main_ui_->actionEditMarkSelected->setEnabled(frame_selected || multi_selection);
     main_ui_->actionEditMarkAllDisplayed->setEnabled(have_frames);
@@ -1714,8 +1738,7 @@ void WiresharkMainWindow::addStatsPluginsToMenu() {
 
             QString stat_name = cfg_name_parts.takeLast().trimmed();
             if (!cfg_name_parts.isEmpty()) {
-                QString menu_name = cfg_name_parts.join("/").trimmed();
-                parent_menu = findOrAddMenu(parent_menu, menu_name);
+                parent_menu = findOrAddMenu(parent_menu, cfg_name_parts);
             }
 
             stats_tree_action = new QAction(stat_name, this);
@@ -2026,6 +2049,9 @@ void WiresharkMainWindow::connectEditMenuActions()
     connect(main_ui_->actionCopyListAsYAML, &QAction::triggered, this,
             [this]() { copySelectedItems(CopyListAsYAML); });
 
+    connect(main_ui_->actionCopyListAsHTML, &QAction::triggered, this,
+            [this]() { copySelectedItems(CopyListAsHTML); });
+
     connect(main_ui_->actionCopyAllVisibleSelectedTreeItems, &QAction::triggered, this,
             [this]() { copySelectedItems(CopyAllVisibleSelectedTreeItems); });
 
@@ -2186,61 +2212,115 @@ void WiresharkMainWindow::copySelectedItems(WiresharkMainWindow::CopySelected se
     case CopyListAsText:
     case CopyListAsCSV:
     case CopyListAsYAML:
+    case CopyListAsHTML:
+
         if (packet_list_->selectedRows().count() > 0)
         {
             QList<int> rows = packet_list_->selectedRows();
-            QStringList content;
+            QStringList content, htmlContent;
 
             PacketList::SummaryCopyType copyType = PacketList::CopyAsText;
             if (selection_type == CopyListAsCSV)
                 copyType = PacketList::CopyAsCSV;
             else if (selection_type == CopyListAsYAML)
                 copyType = PacketList::CopyAsYAML;
+            else if (selection_type == CopyListAsHTML)
+                copyType = PacketList::CopyAsHTML;
 
-            if ((copyType == PacketList::CopyAsText) ||
-                (copyType == PacketList::CopyAsCSV)) {
-                QString headerEntry = packet_list_->createHeaderSummaryText(copyType);
-                content << headerEntry;
+            QStringList hdr_parts;
+            QList<int> align_parts, size_parts;
+
+            if (copyType == PacketList::CopyAsText || copyType == PacketList::CopyAsHTML) {
+                if (prefs.gui_packet_list_copy_text_with_aligned_columns) {
+                    hdr_parts = packet_list_->createHeaderPartsForAligned();
+                    align_parts = packet_list_->createAlignmentPartsForAligned();
+                    size_parts = packet_list_->createSizePartsForAligned(true, hdr_parts, rows);
+                    content << packet_list_->createHeaderSummaryForAligned(hdr_parts, align_parts, size_parts);
+                }
+                else {
+                    content << packet_list_->createHeaderSummaryText(PacketList::CopyAsText);
+                }
+                if (copyType == PacketList::CopyAsHTML) {
+                    htmlContent << packet_list_->createDefaultStyleForHtml();
+                    htmlContent << packet_list_->createOpeningTagForHtml();
+                    htmlContent << packet_list_->createHeaderSummaryForHtml();
+                }
             }
+            else if (copyType == PacketList::CopyAsCSV) {
+                content << packet_list_->createHeaderSummaryText(copyType);
+            }
+
             foreach (int row, rows)
             {
                 QModelIndex idx = packet_list_->model()->index(row, 0);
                 if (! idx.isValid())
                     continue;
 
-                QString entry = packet_list_->createSummaryText(idx, copyType);
-                content << entry;
+                if (copyType == PacketList::CopyAsText || copyType == PacketList::CopyAsHTML) {
+                    if (prefs.gui_packet_list_copy_text_with_aligned_columns)
+                        content << packet_list_->createSummaryForAligned(idx, align_parts, size_parts);
+                    else
+                        content << packet_list_->createSummaryText(idx, PacketList::CopyAsText);
+                    if (copyType == PacketList::CopyAsHTML)
+                        htmlContent << packet_list_->createSummaryForHtml(idx);
+                }
+                else {
+                    content << packet_list_->createSummaryText(idx, copyType);
+                }
             }
 
-            if (content.count() > 0) {
-                clip = content.join("\n");
-                //
-                // Each YAML item ends with a newline, so the string
-                // ends with a newline already if it's CopyListAsYAML.
-                // If we add a newline, there'd be an extra blank
-                // line.
-                //
-                // Otherwise, we've used newlines as separators, not
-                // terminators, so there's no final newline.  Add it.
-                //
-                if (selection_type != CopyListAsYAML)
-                    clip += "\n";
+            if (selection_type == CopyListAsHTML) {
+                // htmlContent will never be empty as they will always have style and table tags
+                QMimeData *mimeData = new QMimeData;
+                htmlContent << packet_list_->createClosingTagForHtml();
+                mimeData->setHtml(htmlContent.join('\n'));
+                mimeData->setText(content.join('\n').append("\n"));
+                mainApp->clipboard()->setMimeData(mimeData, QClipboard::Clipboard);
+            }
+            else {
+                if (content.count() > 0) {
+                    //
+                    // Each YAML item ends with a newline, hence it is not
+                    // joined with a newline else a blank line is created
+                    // before start of entry (or ---) from second packet
+                    // when multiple packets are copied.
+                    //
+                    // Each YAML item ends with a newline, so the string
+                    // ends with a newline already if it's CopyListAsYAML.
+                    // If we add a newline, there'd be an extra blank
+                    // line.
+                    //
+                    // Otherwise, we've used newlines as separators, not
+                    // terminators, so there's no final newline.  Add it.
+                    //
+                    if (selection_type == CopyListAsYAML) {
+                        clip = content.join("");
+                    }
+                    else {
+                        clip = content.join("\n");
+                        clip += "\n";
+                    }
+                }
             }
         }
+
         break;
     }
 
-    if (clip.length() == 0) {
-        /* If no representation then... Try to read the value */
-        proto_item_fill_label(capture_file_.capFile()->finfo_selected, label_str);
-        clip.append(label_str);
-    }
+    if (selection_type != CopyListAsHTML)
+    {
+        if (clip.length() == 0) {
+            /* If no representation then... Try to read the value */
+            proto_item_fill_label(capture_file_.capFile()->finfo_selected, label_str);
+            clip.append(label_str);
+        }
 
-    if (clip.length()) {
-        mainApp->clipboard()->setText(clip);
-    } else {
-        QString err = tr("Couldn't copy text. Try another item.");
-        mainApp->pushStatus(WiresharkApplication::TemporaryStatus, err);
+        if (clip.length()) {
+            mainApp->clipboard()->setText(clip);
+        } else {
+            QString err = tr("Couldn't copy text. Try another item.");
+            mainApp->pushStatus(WiresharkApplication::TemporaryStatus, err);
+        }
     }
 }
 
@@ -2776,10 +2856,12 @@ void WiresharkMainWindow::colorizeConversation(bool create_rule)
             coloring_rules_dialog.exec();
         } else {
             char *err_msg = NULL;
-            if (!color_filters_set_tmp(cc_num, filter, false, &err_msg)) {
+            char *prev_filter = color_filters_get_tmp(cc_num);
+            if (!color_filters_set_tmp(cc_num, filter, prev_filter && (strcmp(prev_filter,filter)==0), &err_msg)) {
                 simple_dialog(ESD_TYPE_ERROR, ESD_BTN_OK, "%s", err_msg);
                 g_free(err_msg);
             }
+            g_free(prev_filter);
             packet_list_->recolorPackets();
         }
     }
@@ -2813,10 +2895,12 @@ void WiresharkMainWindow::colorizeWithFilter(QByteArray filter, int color_number
     if (color_number > 0) {
         // Assume "Color X"
         char *err_msg = NULL;
-        if (!color_filters_set_tmp(color_number, filter.constData(), false, &err_msg)) {
+        char *prev_filter = color_filters_get_tmp(color_number);
+        if (!color_filters_set_tmp(color_number, filter.constData(), prev_filter && (strcmp(prev_filter,filter.constData())==0), &err_msg)) {
             simple_dialog(ESD_TYPE_ERROR, ESD_BTN_OK, "%s", err_msg);
             g_free(err_msg);
         }
+        g_free(prev_filter);
         packet_list_->recolorPackets();
     } else {
         // New coloring rule
@@ -3575,7 +3659,7 @@ void WiresharkMainWindow::showIOGraphDialog(io_graph_item_unit_t value_units, QS
         foreach(iog_dialog, iographdialogs) {
             if (!iog_dialog->fileClosed()) {
                 iog_found = true;
-                iog_dialog->addGraph(true, displayFilter, value_units, yfield);
+                iog_dialog->addGraph(true, false, displayFilter, value_units, yfield);
                 break;
             }
         }

@@ -42,7 +42,7 @@ user_guide_url(const char *page) {
     if (g_file_test(ug_dir->str, G_FILE_TEST_IS_DIR)) {
         g_string_printf(url, "file:///%s/%s", ug_dir->str, page);
     }
-    g_string_free(ug_dir, true);
+    g_string_free(ug_dir, TRUE);
 #else
     char *path = g_build_filename(get_doc_dir(), "wsug_html_chunked", page, NULL);
     if (g_file_test(path, G_FILE_TEST_IS_REGULAR)) {
@@ -58,7 +58,7 @@ user_guide_url(const char *page) {
     if (url->len == 0) {
         g_string_printf(url, WS_DOCS_URL "wsug_html_chunked/%s", page);
     }
-    return g_string_free(url, false);
+    return g_string_free(url, FALSE);
 }
 
 char *
@@ -254,6 +254,12 @@ topic_action_url(topic_action_e action)
         break;
     case(HELP_EXPORT_BYTES_DIALOG):
         url = user_guide_url("ChIOExportSection.html#ChIOExportSelectedDialog");
+        break;
+    case(HELP_EXPORT_PDUS_DIALOG):
+        url = user_guide_url("ChIOExportSection.html#ChIOExportPDUSDialog");
+        break;
+    case(HELP_STRIP_HEADERS_DIALOG):
+        url = user_guide_url("ChIOExportSection.html#ChIOStripHeadersDialog");
         break;
     case(HELP_EXPORT_OBJECT_LIST):
         url = user_guide_url("ChIOExportSection.html#ChIOExportObjectsDialog");

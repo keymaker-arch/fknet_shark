@@ -208,6 +208,15 @@ gather_wireshark_qt_compiled_info(feature_list l)
 #endif
     gather_caplibs_compile_info(l);
     epan_gather_compile_info(l);
+#ifdef HAVE_MINIZIPNG
+    with_feature(l, "Minizip-ng %s", MINIZIPNG_VERSION);
+#else
+#ifdef HAVE_MINIZIP
+    with_feature(l, "Minizip %s", MINIZIP_VERSION);
+#else
+    without_feature(l, "Minizip");
+#endif
+#endif /* HAVE_MINIZIPNG */
 #ifdef QT_MULTIMEDIA_LIB
     with_feature(l, "QtMultimedia");
 #else
@@ -234,12 +243,6 @@ gather_wireshark_qt_compiled_info(feature_list l)
     without_feature(l, "AirPcap");
 #endif
 #endif /* _WIN32 */
-
-#ifdef HAVE_MINIZIP
-    with_feature(l, "Minizip");
-#else
-    without_feature(l, "Minizip");
-#endif
 }
 
 void
@@ -480,7 +483,7 @@ int main(int argc, char *qt_argv[])
     char                *rf_path;
     int                  rf_open_errno;
 #ifdef HAVE_LIBPCAP
-    char                *err_str, *err_str_secondary;;
+    char                *err_str, *err_str_secondary;
 #else
 #ifdef _WIN32
 #ifdef HAVE_AIRPCAP
@@ -877,6 +880,11 @@ int main(int argc, char *qt_argv[])
 #endif
     splash_update(RA_EXTCAP, NULL, NULL);
     extcap_register_preferences();
+
+    /* Apply the extcap command line options now that the extcap preferences
+     * are loaded.
+     */
+    commandline_options_apply_extcap();
 
     /* Some of the preferences affect the capture options. Apply those
      * before getting the other command line arguments, which can also

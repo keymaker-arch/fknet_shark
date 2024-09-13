@@ -24,7 +24,6 @@
 
 #include <stdio.h>
 #include <wsutil/filesystem.h>
-#include <epan/address.h>
 #include <epan/addr_resolv.h>
 #include <epan/oids.h>
 #include <epan/maxmind_db.h>
@@ -35,11 +34,11 @@
 #include <epan/column.h>
 #include <epan/decode_as.h>
 #include <capture_opts.h>
-#include "print.h"
 #include <wsutil/file_util.h>
 #include <wsutil/report_message.h>
 #include <wsutil/wslog.h>
 #include <wsutil/ws_assert.h>
+#include <wsutil/array.h>
 
 #include <epan/prefs-int.h>
 #include <epan/uat-int.h>
@@ -115,8 +114,9 @@ static const enum_val_t gui_version_placement_type[] = {
 };
 
 static const enum_val_t gui_fileopen_style[] = {
-    {"LAST_OPENED", "LAST_OPENED", 0},
-    {"SPECIFIED", "SPECIFIED", 1},
+    {"LAST_OPENED", "LAST_OPENED", FO_STYLE_LAST_OPENED},
+    {"SPECIFIED", "SPECIFIED", FO_STYLE_SPECIFIED},
+    {"CWD", "CWD", FO_STYLE_CWD},
     {NULL, NULL, -1}
 };
 
@@ -155,6 +155,14 @@ static const enum_val_t gui_selection_style[] = {
     {NULL, NULL, -1}
 };
 
+static const enum_val_t gui_packet_list_copy_format_options_for_keyboard_shortcut[] = {
+    {"TEXT", "Text", COPY_FORMAT_TEXT},
+    {"CSV",  "CSV",  COPY_FORMAT_CSV},
+    {"YAML", "YAML", COPY_FORMAT_YAML},
+    {"HTML", "HTML", COPY_FORMAT_HTML},
+    {NULL, NULL, -1}
+};
+
 /* None : Historical behavior, no deinterlacing */
 #define CONV_DEINT_CHOICE_NONE 0
 /* MI : MAC & Interface */
@@ -169,6 +177,14 @@ static const enum_val_t conv_deint_options[] = {
     {".MI", ".MI", CONV_DEINT_CHOICE_MI },
     {"VM.", "VM.", CONV_DEINT_CHOICE_VM },
     {"VMI", "VMI", CONV_DEINT_CHOICE_VMI },
+    {NULL, NULL, -1}
+};
+
+static const enum_val_t abs_time_format_options[] = {
+    {"NEVER", "Never", ABS_TIME_ASCII_NEVER},
+    {"TREE", "Protocol tree only", ABS_TIME_ASCII_TREE},
+    {"COLUMN", "Protocol tree and columns", ABS_TIME_ASCII_COLUMN},
+    {"ALWAYS", "Always", ABS_TIME_ASCII_ALWAYS},
     {NULL, NULL, -1}
 };
 
@@ -270,6 +286,8 @@ struct preference {
       } enum_info;                   /**< for PREF_ENUM */
     } info;                          /**< display/text file information */
     struct pref_custom_cbs custom_cbs;   /**< for PREF_CUSTOM */
+    const char *dissector_table;     /**< for PREF_DECODE_AS_RANGE */
+    const char *dissector_desc;      /**< for PREF_DECODE_AS_RANGE */
 };
 
 const char* prefs_get_description(pref_t *pref)
@@ -295,6 +313,16 @@ const char* prefs_get_name(pref_t *pref)
 uint32_t prefs_get_max_value(pref_t *pref)
 {
     return pref->info.max_value;
+}
+
+const char* prefs_get_dissector_table(pref_t *pref)
+{
+    return pref->dissector_table;
+}
+
+static const char* prefs_get_dissector_description(pref_t *pref)
+{
+    return pref->dissector_desc;
 }
 
 /*
@@ -583,24 +611,17 @@ void
 prefs_register_module_alias(const char *name, module_t *module)
 {
     module_alias_t *alias;
-    const char *p;
-    unsigned char c;
 
     /*
-     * Yes.
-     * Make sure that only ASCII letters, numbers, underscores, hyphens,
-     * and dots appear in the name.  We allow upper-case letters, to
-     * handle the Diameter dissector having used "Diameter" rather
+     * Accept any name that can occur in protocol names. We allow upper-case
+     * letters, to handle the Diameter dissector having used "Diameter" rather
      * than "diameter" as its preference module name in the past.
      *
-     * Crash if there is, as that's an error in the code, but the name
-     * can be used on the command line, and shouldn't require quoting,
-     * etc.
+     * Crash if the name is invalid, as that's an error in the code, but the name
+     * can be used on the command line, and shouldn't require quoting, etc.
      */
-    for (p = name; (c = *p) != '\0'; p++) {
-        if (!(g_ascii_isalpha(c) || g_ascii_isdigit(c) || c == '_' ||
-              c == '-' || c == '.'))
-            ws_error("Preference module alias \"%s\" contains invalid characters", name);
+    if (module_check_valid_name(name, false) != '\0') {
+        ws_error("Preference module alias \"%s\" contains invalid characters", name);
     }
 
     /*
@@ -1093,7 +1114,7 @@ typedef struct {
 } find_pref_arg_t;
 
 static int
-preference_match(gconstpointer a, gconstpointer b)
+preference_match(const void *a, const void *b)
 {
     const pref_t *pref = (const pref_t *)a;
     const char *name = (const char *)b;
@@ -1303,13 +1324,10 @@ bool prefs_get_bool_value(pref_t *pref, pref_source_t source)
     {
     case pref_default:
         return pref->default_val.boolval;
-        break;
     case pref_stashed:
         return pref->stashed_val.boolval;
-        break;
     case pref_current:
         return *pref->varp.boolp;
-        break;
     default:
         ws_assert_not_reached();
         break;
@@ -1386,13 +1404,10 @@ int prefs_get_enum_value(pref_t *pref, pref_source_t source)
     {
     case pref_default:
         return pref->default_val.enumval;
-        break;
     case pref_stashed:
         return pref->stashed_val.enumval;
-        break;
     case pref_current:
         return *pref->varp.enump;
-        break;
     default:
         ws_assert_not_reached();
         break;
@@ -1595,7 +1610,7 @@ DIAG_ON(cast-qual)
 }
 
 /* Refactoring to handle both PREF_RANGE and PREF_DECODE_AS_RANGE */
-static void
+static pref_t*
 prefs_register_range_preference_common(module_t *module, const char *name,
                                 const char *title, const char *description,
                                 range_t **var, uint32_t max_value, int type)
@@ -1618,6 +1633,8 @@ prefs_register_range_preference_common(module_t *module, const char *name,
     preference->varp.range = var;
     preference->default_val.range = range_copy(wmem_epan_scope(), *var);
     preference->stashed_val.range = NULL;
+
+    return preference;
 }
 
 /*
@@ -1758,10 +1775,8 @@ range_t* prefs_get_range_value_real(pref_t *pref, pref_source_t source)
         return pref->default_val.range;
     case pref_stashed:
         return pref->stashed_val.range;
-        break;
     case pref_current:
         return *pref->varp.range;
-        break;
     default:
         ws_assert_not_reached();
         break;
@@ -1899,10 +1914,8 @@ color_t* prefs_get_color_value(pref_t *pref, pref_source_t source)
         return &pref->default_val.color;
     case pref_stashed:
         return &pref->stashed_val.color;
-        break;
     case pref_current:
         return pref->varp.colorp;
-        break;
     default:
         ws_assert_not_reached();
         break;
@@ -1981,10 +1994,14 @@ prefs_register_custom_preference_TCP_Analysis(module_t *module, const char *name
  */
 void prefs_register_decode_as_range_preference(module_t *module, const char *name,
     const char *title, const char *description, range_t **var,
-    uint32_t max_value)
+    uint32_t max_value, const char *dissector_table, const char *dissector_description)
 {
-    prefs_register_range_preference_common(module, name, title,
+    pref_t *preference;
+
+    preference = prefs_register_range_preference_common(module, name, title,
                 description, var, max_value, PREF_DECODE_AS_RANGE);
+    preference->dissector_desc = dissector_description;
+    preference->dissector_table = dissector_table;
 }
 
 /*
@@ -2211,14 +2228,18 @@ pref_unstash(pref_t *pref, void *unstash_data_p)
         break;
 
     case PREF_DECODE_AS_RANGE:
+    {
+        const char* table_name = prefs_get_dissector_table(pref);
         if (!ranges_are_equal(*pref->varp.range, pref->stashed_val.range)) {
             uint32_t i, j;
             unstash_data->module->prefs_changed_flags |= prefs_get_effect_flags(pref);
 
             if (unstash_data->handle_decode_as) {
-                sub_dissectors = find_dissector_table(pref->name);
+                sub_dissectors = find_dissector_table(table_name);
                 if (sub_dissectors != NULL) {
-                    handle = dissector_table_get_dissector_handle(sub_dissectors, unstash_data->module->title);
+                    const char *handle_desc = prefs_get_dissector_description(pref);
+                    // It should perhaps be possible to get this via dissector name.
+                    handle = dissector_table_get_dissector_handle(sub_dissectors, handle_desc);
                     if (handle != NULL) {
                         /* Set the current handle to NULL for all the old values
                          * in the dissector table. If there isn't an initial
@@ -2232,12 +2253,12 @@ pref_unstash(pref_t *pref, void *unstash_data_p)
                          */
                         for (i = 0; i < (*pref->varp.range)->nranges; i++) {
                             for (j = (*pref->varp.range)->ranges[i].low; j < (*pref->varp.range)->ranges[i].high; j++) {
-                                dissector_change_uint(pref->name, j, NULL);
-                                decode_build_reset_list(pref->name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER(j), NULL, NULL);
+                                dissector_change_uint(table_name, j, NULL);
+                                decode_build_reset_list(table_name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER(j), NULL, NULL);
                             }
 
-                            dissector_change_uint(pref->name, (*pref->varp.range)->ranges[i].high, NULL);
-                            decode_build_reset_list(pref->name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER((*pref->varp.range)->ranges[i].high), NULL, NULL);
+                            dissector_change_uint(table_name, (*pref->varp.range)->ranges[i].high, NULL);
+                            decode_build_reset_list(table_name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER((*pref->varp.range)->ranges[i].high), NULL, NULL);
                         }
                     }
                 }
@@ -2253,18 +2274,18 @@ pref_unstash(pref_t *pref, void *unstash_data_p)
                     for (i = 0; i < (*pref->varp.range)->nranges; i++) {
 
                         for (j = (*pref->varp.range)->ranges[i].low; j < (*pref->varp.range)->ranges[i].high; j++) {
-                            dissector_change_uint(pref->name, j, handle);
-                            decode_build_reset_list(pref->name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER(j), NULL, NULL);
+                            dissector_change_uint(table_name, j, handle);
+                            decode_build_reset_list(table_name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER(j), NULL, NULL);
                         }
 
-                        dissector_change_uint(pref->name, (*pref->varp.range)->ranges[i].high, handle);
-                        decode_build_reset_list(pref->name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER((*pref->varp.range)->ranges[i].high), NULL, NULL);
+                        dissector_change_uint(table_name, (*pref->varp.range)->ranges[i].high, handle);
+                        decode_build_reset_list(table_name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER((*pref->varp.range)->ranges[i].high), NULL, NULL);
                     }
                 }
             }
         }
         break;
-
+    }
     case PREF_RANGE:
         if (!ranges_are_equal(*pref->varp.range, pref->stashed_val.range)) {
             unstash_data->module->prefs_changed_flags |= prefs_get_effect_flags(pref);
@@ -2549,11 +2570,13 @@ column_hidden_set_cb(pref_t* pref, const char* value, unsigned int* changed_flag
      * set PRS_COL_HIDDEN on the command line).
      */
     format_pref = prefs_find_preference(gui_column_module, PRS_COL_FMT);
+    clp = (format_pref) ? *format_pref->varp.list : NULL;
     int cidx = 1;
-    for (clp = *format_pref->varp.list; clp != NULL; clp = clp->next) {
+    while (clp) {
       cfmt = (fmt_data *)clp->data;
       cfmt->visible = prefs_is_column_visible(*pref->varp.string, cidx);
       cidx++;
+      clp = clp->next;
     }
 
     return PREFS_SET_OK;
@@ -2597,7 +2620,7 @@ column_hidden_to_str_cb(pref_t* pref, bool default_val)
         cidx++;
     }
 
-    return g_string_free (cols_hidden, false);
+    return g_string_free (cols_hidden, FALSE);
 }
 
 static bool
@@ -2628,9 +2651,11 @@ column_hidden_fmt_set_cb(pref_t* pref, const char* value, unsigned int* changed_
      * the hidden column prefs before the column format prefs.)
      */
     format_pref = prefs_find_preference(gui_column_module, PRS_COL_FMT);
-    for (clp = *format_pref->varp.list; clp != NULL; clp = clp->next) {
+    clp = (format_pref) ? *format_pref->varp.list : NULL;
+    while (clp) {
       cfmt = (fmt_data *)clp->data;
       cfmt->visible = prefs_is_column_fmt_visible(*pref->varp.string, cfmt);
+      clp = clp->next;
     }
 
     return PREFS_SET_OK;
@@ -2683,7 +2708,7 @@ column_hidden_fmt_to_str_cb(pref_t* pref, bool default_val)
         clp = clp->next;
     }
 
-    return g_string_free (cols_hidden, false);
+    return g_string_free (cols_hidden, FALSE);
 }
 
 static bool
@@ -3511,13 +3536,13 @@ prefs_register_modules(void)
 
     prefs_register_uint_preference(gui_module, "debounce.timer",
                                    "How long to wait before processing computationally intensive user input",
-                                   "How long to wait (in milliseconds) before processing\
-                                   computationally intensive user input.\
-                                   If you type quickly, consider lowering the value for a 'snappier'\
-                                   experience.\
-                                   If you type slowly, consider increasing the value to avoid performance issues.\
-                                   This is currently used to delay searches in View -> Internals -> Supported Protocols\
-                                   and Preferences -> Advanced menu.",
+                                   "How long to wait (in milliseconds) before processing "
+                                   "computationally intensive user input. "
+                                   "If you type quickly, consider lowering the value for a 'snappier' "
+                                   "experience. "
+                                   "If you type slowly, consider increasing the value to avoid performance issues. "
+                                   "This is currently used to delay searches in View -> Internals -> Supported Protocols "
+                                   "and Preferences -> Advanced menu.",
                                    10,
                                    &prefs.gui_debounce_timer);
 
@@ -3645,7 +3670,7 @@ prefs_register_modules(void)
 
     prefs_register_enum_preference(gui_module, "packet_list_elide_mode",
                        "Elide mode",
-                       "The position of \"...\" in packet list text.",
+                       "The position of \"...\" (ellipsis) in packet list text.",
                        (int*)(void*)(&prefs.gui_packet_list_elide_mode), gui_packet_list_elide_mode, false);
     prefs_register_uint_preference(gui_module, "decimal_places1",
             "Count of decimal places for values of type 1",
@@ -3688,6 +3713,16 @@ prefs_register_modules(void)
             " two files per RTP stream."
             ,&prefs.gui_rtp_player_use_disk2);
 
+    prefs_register_enum_preference(gui_layout_module, "gui_packet_list_copy_format_options_for_keyboard_shortcut",
+                                   "Allows text to be copied with selected format",
+                                   "Allows text to be copied with selected format when copied via keyboard",
+                                   (int*)(void*)(&prefs.gui_packet_list_copy_format_options_for_keyboard_shortcut),
+                                   gui_packet_list_copy_format_options_for_keyboard_shortcut, false);
+
+    prefs_register_bool_preference(gui_layout_module, "gui_packet_list_copy_text_with_aligned_columns",
+                                   "Allows text to be copied with aligned columns",
+                                   "Allows text to be copied with aligned columns when copied via menu or keyboard",
+                                   &prefs.gui_packet_list_copy_text_with_aligned_columns);
 
     prefs_register_bool_preference(gui_layout_module, "packet_list_show_related",
                                    "Show Related Packets",
@@ -3985,6 +4020,15 @@ prefs_register_modules(void)
                                    "Display all byte fields with a space character between each byte in the packet list.",
                                    &prefs.display_byte_fields_with_spaces);
 
+    /*
+     * Note the -t /  option only affects the display of the packet timestamp
+     * in the default time column; this is for all other absolute times.
+     */
+    prefs_register_enum_preference(protocols_module, "display_abs_time_ascii",
+                                   "Format absolute times like asctime",
+                                   "When to format absolute times similar to asctime instead of ISO 8601, for backwards compatibility with older Wireshark.",
+                                   (int*)&prefs.display_abs_time_ascii, abs_time_format_options, false);
+
     prefs_register_bool_preference(protocols_module, "enable_incomplete_dissectors_check",
                                    "Look for incomplete dissectors",
                                    "Look for dissectors that left some bytes undecoded.",
@@ -4052,14 +4096,14 @@ prefs_get_string_list(const char *str)
             if (state == IN_QUOT || backslash) {
                 /* We were in the middle of a quoted string or backslash escape,
                    and ran out of characters; that's an error.  */
-                g_string_free(slstr, true);
+                g_string_free(slstr, TRUE);
                 prefs_clear_string_list(sl);
                 return NULL;
             }
             if (slstr->len > 0)
-                sl = g_list_append(sl, g_string_free(slstr, false));
+                sl = g_list_append(sl, g_string_free(slstr, FALSE));
             else
-                g_string_free(slstr, true);
+                g_string_free(slstr, TRUE);
             break;
         }
         if (cur_c == '"' && !backslash) {
@@ -4095,7 +4139,7 @@ prefs_get_string_list(const char *str)
                and it wasn't preceded by a backslash; it's the end of
                the string we were working on...  */
             if (slstr->len > 0) {
-                sl = g_list_append(sl, g_string_free(slstr, false));
+                sl = g_list_append(sl, g_string_free(slstr, FALSE));
                 slstr = g_string_sized_new(default_size);
             }
 
@@ -4155,7 +4199,7 @@ char *join_string_list(GList *sl)
 
         cur = cur->next;
     }
-    return g_string_free(joined_str, false);
+    return g_string_free(joined_str, FALSE);
 }
 
 void
@@ -4384,6 +4428,8 @@ pre_init_prefs(void)
     prefs.gui_layout_content_2       = layout_pane_content_pdetails;
     prefs.gui_layout_content_3       = layout_pane_content_pbytes;
     prefs.gui_packet_list_elide_mode = ELIDE_RIGHT;
+    prefs.gui_packet_list_copy_format_options_for_keyboard_shortcut = COPY_FORMAT_TEXT;
+    prefs.gui_packet_list_copy_text_with_aligned_columns = false;
     prefs.gui_packet_list_show_related = true;
     prefs.gui_packet_list_show_minimap = true;
     prefs.gui_packet_list_sortable     = true;
@@ -4452,6 +4498,7 @@ pre_init_prefs(void)
     /* protocols */
     prefs.display_hidden_proto_items = false;
     prefs.display_byte_fields_with_spaces = false;
+    prefs.display_abs_time_ascii = ABS_TIME_ASCII_TREE;
     prefs.ignore_dup_frames = false;
     prefs.ignore_dup_frames_cache_entries = 10000;
 
@@ -4498,13 +4545,6 @@ reset_pref(pref_t *pref)
 
     case PREF_ENUM:
     case PREF_PROTO_TCP_SNDAMB_ENUM:
-        /*
-         * For now, we save the "description" value, so that if we
-         * save the preferences older versions of Wireshark can at
-         * least read preferences that they supported; we support
-         * either the short name or the description when reading
-         * the preferences file or a "-o" option.
-         */
         *pref->varp.enump = pref->default_val.enumval;
         break;
 
@@ -4802,7 +4842,7 @@ read_prefs_file(const char *pf_path, FILE *pf,
     enum {
         START,    /* beginning of a line */
         IN_VAR,   /* processing key name */
-        PRE_VAL,  /* finished processing key name, skipping white space befor evalue */
+        PRE_VAL,  /* finished processing key name, skipping white space before value */
         IN_VAL,   /* processing value */
         IN_SKIP   /* skipping to the end of the line */
     } state = START;
@@ -4978,8 +5018,8 @@ read_prefs_file(const char *pf_path, FILE *pf,
         }
     }
 
-    g_string_free(cur_val, true);
-    g_string_free(cur_var, true);
+    g_string_free(cur_val, TRUE);
+    g_string_free(cur_var, TRUE);
 
     if (ferror(pf))
         return errno;
@@ -5094,13 +5134,10 @@ unsigned prefs_get_uint_value_real(pref_t *pref, pref_source_t source)
     {
     case pref_default:
         return pref->default_val.uint;
-        break;
     case pref_stashed:
         return pref->stashed_val.uint;
-        break;
     case pref_current:
         return *pref->varp.uint;
-        break;
     default:
         ws_assert_not_reached();
         break;
@@ -6399,31 +6436,31 @@ set_pref(char *pref_name, const char *value, void *private_data,
                 *pref->varp.range = newrange;
                 containing_module->prefs_changed_flags |= prefs_get_effect_flags(pref);
 
-                /* Name of preference is the dissector table */
-                sub_dissectors = find_dissector_table(pref->name);
+                const char* table_name = prefs_get_dissector_table(pref);
+                sub_dissectors = find_dissector_table(table_name);
                 if (sub_dissectors != NULL) {
                     handle = dissector_table_get_dissector_handle(sub_dissectors, module->title);
                     if (handle != NULL) {
                         /* Delete all of the old values from the dissector table */
                         for (i = 0; i < (*pref->varp.range)->nranges; i++) {
                             for (j = (*pref->varp.range)->ranges[i].low; j < (*pref->varp.range)->ranges[i].high; j++) {
-                                dissector_delete_uint(pref->name, j, handle);
-                                decode_build_reset_list(pref->name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER(j), NULL, NULL);
+                                dissector_delete_uint(table_name, j, handle);
+                                decode_build_reset_list(table_name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER(j), NULL, NULL);
                             }
 
-                            dissector_delete_uint(pref->name, (*pref->varp.range)->ranges[i].high, handle);
-                            decode_build_reset_list(pref->name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER((*pref->varp.range)->ranges[i].high), NULL, NULL);
+                            dissector_delete_uint(table_name, (*pref->varp.range)->ranges[i].high, handle);
+                            decode_build_reset_list(table_name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER((*pref->varp.range)->ranges[i].high), NULL, NULL);
                         }
 
                         /* Add new values to the dissector table */
                         for (i = 0; i < newrange->nranges; i++) {
                             for (j = newrange->ranges[i].low; j < newrange->ranges[i].high; j++) {
-                                dissector_change_uint(pref->name, j, handle);
-                                decode_build_reset_list(pref->name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER(j), NULL, NULL);
+                                dissector_change_uint(table_name, j, handle);
+                                decode_build_reset_list(table_name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER(j), NULL, NULL);
                             }
 
-                            dissector_change_uint(pref->name, newrange->ranges[i].high, handle);
-                            decode_build_reset_list(pref->name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER(newrange->ranges[i].high), NULL, NULL);
+                            dissector_change_uint(table_name, newrange->ranges[i].high, handle);
+                            decode_build_reset_list(table_name, dissector_table_get_type(sub_dissectors), GUINT_TO_POINTER(newrange->ranges[i].high), NULL, NULL);
                         }
 
                         /* XXX - Do we save the decode_as_entries file here? */
@@ -6663,14 +6700,26 @@ prefs_pref_type_description(pref_t *pref)
     {
         const enum_val_t *enum_valp = pref->info.enum_info.enumvals;
         GString *enum_str = g_string_new("One of: ");
+        GString *desc_str = g_string_new("\nEquivalently, one of: ");
+        bool distinct = false;
         while (enum_valp->name != NULL) {
-            g_string_append(enum_str, enum_valp->description);
+            g_string_append(enum_str, enum_valp->name);
+            g_string_append(desc_str, enum_valp->description);
+            if (g_strcmp0(enum_valp->name, enum_valp->description) != 0) {
+                distinct = true;
+            }
             enum_valp++;
-            if (enum_valp->name != NULL)
+            if (enum_valp->name != NULL) {
                 g_string_append(enum_str, ", ");
+                g_string_append(desc_str, ", ");
+            }
         }
+        if (distinct) {
+            g_string_append(enum_str, desc_str->str);
+        }
+        g_string_free(desc_str, TRUE);
         g_string_append(enum_str, "\n(case-insensitive).");
-        return g_string_free(enum_str, false);
+        return g_string_free(enum_str, FALSE);
     }
 
     case PREF_STRING:
@@ -6865,17 +6914,10 @@ prefs_pref_to_str(pref_t *pref, pref_source_t source) {
     case PREF_PROTO_TCP_SNDAMB_ENUM:
     {
         int pref_enumval = *(int *) valp;
-        /*
-         * For now, we return the "description" value, so that if we
-         * save the preferences older versions of Wireshark can at
-         * least read preferences that they supported; we support
-         * either the short name or the description when reading
-         * the preferences file or a "-o" option.
-         */
         const enum_val_t *enum_valp = pref->info.enum_info.enumvals;
         while (enum_valp->name != NULL) {
             if (enum_valp->value == pref_enumval)
-                return g_strdup(enum_valp->description);
+                return g_strdup(enum_valp->name);
             enum_valp++;
         }
         break;

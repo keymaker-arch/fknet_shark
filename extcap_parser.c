@@ -115,7 +115,7 @@ static extcap_token_sentence *extcap_tokenize_sentence(const char *s) {
     unsigned param_type = EXTCAP_PARAM_UNKNOWN;
 
     if (!g_utf8_validate(s, -1, NULL))
-        return false;
+        return NULL;
 
     extcap_token_sentence *rs = g_new0(extcap_token_sentence, 1);
 
@@ -317,13 +317,13 @@ void extcap_free_arg_list(GList *a) {
     g_list_free_full(a, (GDestroyNotify)extcap_free_arg);
 }
 
-static int glist_find_numbered_arg(gconstpointer listelem, gconstpointer needle) {
+static int glist_find_numbered_arg(const void *listelem, const void *needle) {
     if (((const extcap_arg *) listelem)->arg_num == *((const int *) needle))
         return 0;
     return 1;
 }
 
-static int glist_find_numbered_control(gconstpointer listelem, gconstpointer needle) {
+static int glist_find_numbered_control(const void *listelem, const void *needle) {
     if (((const iface_toolbar_control *) listelem)->num == *((const int *) needle))
         return 0;
     return 1;

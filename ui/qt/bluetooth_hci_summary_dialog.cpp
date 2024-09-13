@@ -80,7 +80,7 @@ bluetooth_hci_summary_tap_init(void *data)
     if (error_string != NULL) {
         simple_dialog(ESD_TYPE_ERROR, ESD_BTN_OK,
                 "%s", error_string->str);
-        g_string_free(error_string, true);
+        g_string_free(error_string, TRUE);
     }
 }
 
@@ -185,7 +185,7 @@ void BluetoothHciSummaryDialog::keyPressEvent(QKeyEvent *event)
 {
 /* NOTE: Do nothing*, but in real it "takes focus" from button_box so allow user
  * to use Enter button to jump to frame from tree widget */
-/* * - reimplement shortcuts from contex menu */
+/* * - reimplement shortcuts from context menu */
 
    if (event->modifiers() & Qt::ControlModifier && event->key()== Qt::Key_M)
         on_actionMark_Unmark_Row_triggered();
@@ -916,7 +916,7 @@ void BluetoothHciSummaryDialog::displayFilterLineEditAccepted()
     if (error_string != NULL) {
         simple_dialog(ESD_TYPE_ERROR, ESD_BTN_OK,
                 "%s", error_string->str);
-        g_string_free(error_string, true);
+        g_string_free(error_string, TRUE);
     }
 
     cap_file_.retapPackets();

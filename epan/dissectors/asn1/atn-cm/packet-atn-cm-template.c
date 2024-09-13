@@ -27,6 +27,7 @@
 #include <epan/packet.h>
 #include <epan/exceptions.h>
 #include <epan/conversation.h>
+#include <wsutil/array.h>
 #include "packet-ber.h"
 #include "packet-per.h"
 #include "packet-atn-ulcs.h"
@@ -39,7 +40,7 @@ void proto_reg_handoff_atn_cm(void);
 #include "packet-atn-cm-hf.c"
 
 #include "packet-atn-cm-ett.c"
-static gint ett_atn_cm;
+static int ett_atn_cm;
 
 #include "packet-atn-cm-fn.c"
 static int proto_atn_cm;
@@ -178,7 +179,7 @@ void proto_register_atn_cm (void)
     static hf_register_info hf_atn_cm[] = {
           #include "packet-atn-cm-hfarr.c"
     };
-    static gint *ett[] = {
+    static int *ett[] = {
       #include "packet-atn-cm-ettarr.c"
       &ett_atn_cm
     };

@@ -11,7 +11,6 @@
 
 #include <stdio.h>
 #include <inttypes.h>
-#include <glib.h>
 
 #include <wsutil/ws_assert.h>
 #include <wsutil/wslog.h>
@@ -51,9 +50,9 @@ typedef enum {
 } sttype_id_t;
 
 typedef void *          (*STTypeNewFunc)(void *);
-typedef void *          (*STTypeDupFunc)(gconstpointer);
+typedef void *          (*STTypeDupFunc)(const void *);
 typedef void            (*STTypeFreeFunc)(void *);
-typedef char*           (*STTypeToStrFunc)(gconstpointer, bool pretty);
+typedef char*           (*STTypeToStrFunc)(const void *, bool pretty);
 
 
 /* Type information */

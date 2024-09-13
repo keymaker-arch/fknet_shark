@@ -25,6 +25,9 @@
 
 #include "mate.h"
 #include "mate_grammar.h"
+
+#include "ws_attributes.h"
+
 #include <wsutil/file_util.h>
 #include <wsutil/str_util.h>
 
@@ -73,6 +76,7 @@ typedef struct _transf_action_t {
 	AVPL* avpl;
 } transf_action_t;
 
+WS_NORETURN
 static void configuration_error(mate_config* mc, const char* fmt, ...) {
 	static char error_buffer[256];
 	const char* incl;
@@ -165,7 +169,7 @@ static char* recolonize(mate_config* mc, char* s) {
 
 	r = str->str;
 
-	g_string_free(str,false);
+	g_string_free(str,FALSE);
 
 	return r;
 }
@@ -190,11 +194,15 @@ DIAG_ON_LEMON()
 %extra_argument { mate_config* mc }
 
 %syntax_error {
-	configuration_error(mc,"Syntax Error before %s",yyminor);
+	if(yyminor == NULL) {
+		configuration_error(mc,"Syntax error detected before end of file.");
+	} else {
+		configuration_error(mc,"Syntax error at or before \"%s\"",yyminor);
+	}
 }
 
 %parse_failure {
-	configuration_error(mc,"Parse Error");
+	configuration_error(mc,"Parse error");
 }
 
 %type   transform_decl  { AVPL_Transf* }
@@ -352,7 +360,9 @@ transform_decl(A) ::= TRANSFORM_KW NAME(B) transform_body(C) SEMICOLON. {
 	for ( c = C; c; c = c->next )
 		c->name = g_strdup(B);
 
-	g_hash_table_insert(mc->transfs,C->name,C);
+	if (C) {
+		g_hash_table_insert(mc->transfs,C->name,C);
+	}
 
 	A = NULL;
 }

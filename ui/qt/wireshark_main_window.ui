@@ -659,6 +659,7 @@
      <addaction name="actionCopyListAsText"/>
      <addaction name="actionCopyListAsCSV"/>
      <addaction name="actionCopyListAsYAML"/>
+     <addaction name="actionCopyListAsHTML"/>
      <addaction name="separator"/>
      <addaction name="actionCopyAllVisibleItems"/>
      <addaction name="actionCopyAllVisibleSelectedTreeItems"/>
@@ -787,6 +788,7 @@
    <addaction name="actionViewZoomOut"/>
    <addaction name="actionViewNormalSize"/>
    <addaction name="actionViewResizeColumns"/>
+   <addaction name="actionViewResetLayout"/>
   </widget>
   <widget class="MainStatusBar" name="statusBar"/>
   <widget class="QToolBar" name="displayFilterToolBar">
@@ -901,16 +903,14 @@
   </action>
   <action name="actionHelpContents">
    <property name="text">
-    <string>&amp;Contents</string>
+    <string>&amp;User's Guide</string>
    </property>
+   <!-- This tooltip is replaced with the URL -->
    <property name="toolTip">
-    <string>Help contents</string>
+    <string>Wireshark User's Guide</string>
    </property>
    <property name="shortcut">
     <string notr="true">F1</string>
-   </property>
-   <property name="iconVisibleInMenu">
-    <bool>true</bool>
    </property>
   </action>
   <action name="actionHelpMPWireshark">
@@ -1369,6 +1369,11 @@
   <action name="actionCopyListAsYAML">
    <property name="text">
     <string>As &amp;YAML</string>
+   </property>
+  </action>
+  <action name="actionCopyListAsHTML">
+   <property name="text">
+    <string>As &amp;HTML</string>
    </property>
   </action>
   <action name="actionCopyAllVisibleItems">
@@ -2205,7 +2210,7 @@
     <string>Reset Layout</string>
    </property>
    <property name="toolTip">
-    <string>Reset appearance layout to default size</string>
+    <string>Reset layout to default size</string>
    </property>
    <property name="shortcut">
     <string notr="true">Ctrl+Shift+W</string>

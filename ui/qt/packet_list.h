@@ -46,7 +46,8 @@ public:
     enum SummaryCopyType {
         CopyAsText,
         CopyAsCSV,
-        CopyAsYAML
+        CopyAsYAML,
+        CopyAsHTML
     };
     Q_ENUM(SummaryCopyType)
 
@@ -98,6 +99,18 @@ public:
     QString createSummaryText(QModelIndex idx, SummaryCopyType type);
     QString createHeaderSummaryText(SummaryCopyType type);
 
+    QStringList createHeaderPartsForAligned();
+    QList<int> createAlignmentPartsForAligned();
+    QList<int> createSizePartsForAligned(bool useHeader, QStringList hdr_parts, QList<int> rows);
+    QString createHeaderSummaryForAligned(QStringList hdr_parts, QList<int> align_parts, QList<int> size_parts);
+    QString createSummaryForAligned(QModelIndex idx, QList<int> align_parts, QList<int> size_parts);
+
+    QString createDefaultStyleForHtml();
+    QString createOpeningTagForHtml();
+    QString createHeaderSummaryForHtml();
+    QString createSummaryForHtml(QModelIndex idx);
+    QString createClosingTagForHtml();
+
     void resizeAllColumns(bool onlyTimeFormatted = false);
 
 protected:
@@ -124,7 +137,6 @@ private:
     capture_file *cap_file_;
     QMenu conv_menu_;
     QMenu colorize_menu_;
-    QMenu proto_prefs_menus_;
     int ctx_column_;
     QByteArray column_state_;
     OverlayScrollBar *overlay_sb_;
@@ -175,6 +187,7 @@ signals:
 public slots:
     void setCaptureFile(capture_file *cf);
     void setMonospaceFont(const QFont &mono_font);
+    void setRegularFont(const QFont &regular_font);
     void goNextPacket();
     void goPreviousPacket();
     void goFirstPacket();

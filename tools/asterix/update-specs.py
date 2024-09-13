@@ -20,6 +20,8 @@ import os
 import sys
 import re
 
+import convertspec as convert
+
 # Path to default upstream repository
 upstream_repo = 'https://zoranbosnjak.github.io/asterix-specs'
 dissector_file = 'epan/dissectors/packet-asterix.c'
@@ -95,7 +97,7 @@ def safe_string(s):
         '"':    r'\"',  # Double quotation mark.
         "\a":   "",     # Audible alert.
         "\b":   "",     # Backspace character.
-        "\e":   "",     # <ESC> character. (This is a GNU extension.)
+        chr(27): "",    # <ESC> character.
         "\f":   "",     # Form feed.
         "\n":   "",     # Newline character.
         "\r":   "",     # Carriage return.
@@ -450,12 +452,10 @@ def part1(ctx, get_ref, catalogue):
                 tell('};')
 
                 # AsterixField
-                first_part = list(takewhile(lambda x: x is not None, items))
-                n = (sum([get_bit_size(i) for i in first_part]) + 1) // 8
                 parts = 'I{}_PARTS'.format(ref)
                 comp = '{ NULL }'
-                tell('static const AsterixField I{} = {} FX, {}, 0, {}, &hf_{}, {}, {} {};'.format
-                    (ref, '{', n, 0, ref, parts, comp, '}'))
+                tell('static const AsterixField I{} = {} FX, 0, 0, 0, &hf_{}, {}, {} {};'.format
+                    (ref, '{', ref, parts, comp, '}'))
 
             elif t == 'Repetitive':
                 ctx.reset_offset()
@@ -730,6 +730,7 @@ def main():
     # read and json-decode input files
     jsons = load_jsons(args.paths)
     jsons = [json.loads(i) for i in jsons]
+    jsons = [convert.handle_asterix(i) for i in jsons]
     jsons = sorted(jsons, key = lambda x: (x['number'], x['edition']['major'], x['edition']['minor']))
     jsons = [spec for spec in jsons if spec['type'] == 'Basic']
     jsons = [remove_rfs(spec) for spec in jsons]

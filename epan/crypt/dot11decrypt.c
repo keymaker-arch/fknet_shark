@@ -21,8 +21,6 @@
 #include <wsutil/pint.h>
 
 #include <epan/proto.h> /* for DISSECTOR_ASSERT. */
-#include <epan/tvbuff.h>
-#include <epan/to_str.h>
 #include <epan/strutil.h>
 
 #include "dot11decrypt_util.h"
@@ -1148,7 +1146,7 @@ int Dot11DecryptSetLastSSID(
 }
 
 static unsigned
-Dot11DecryptSaHash(gconstpointer key)
+Dot11DecryptSaHash(const void *key)
 {
     GBytes *bytes = g_bytes_new_static(key, sizeof(DOT11DECRYPT_SEC_ASSOCIATION_ID));
     unsigned hash = g_bytes_hash(bytes);
@@ -1157,7 +1155,7 @@ Dot11DecryptSaHash(gconstpointer key)
 }
 
 static gboolean
-Dot11DecryptIsSaIdEqual(gconstpointer key1, gconstpointer key2)
+Dot11DecryptIsSaIdEqual(const void *key1, const void *key2)
 {
     return memcmp(key1, key2, sizeof(DOT11DECRYPT_SEC_ASSOCIATION_ID)) == 0;
 }
@@ -2950,7 +2948,7 @@ parse_key_string(char* input_string, uint8_t key_type, char** error)
                         g_string_append_printf(err_string, "%u, ", allowed_key_lengths[i]);
                     }
                     g_string_append_printf(err_string, "or %u bytes.", allowed_key_lengths[i]);
-                    *error = g_string_free(err_string, false);
+                    *error = g_string_free(err_string, FALSE);
                 }
                 g_byte_array_free(key_ba, true);
                 return NULL;

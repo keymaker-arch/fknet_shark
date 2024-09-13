@@ -5,14 +5,15 @@
 	Pidl is a perl based IDL compiler for DCE/RPC idl files.
 	It is maintained by the Samba team, not the Wireshark team.
 	Instructions on how to download and install Pidl can be
-	found at https://gitlab.com/wireshark/wireshark/-/wikis/Pidl
+	found at https://wiki.wireshark.org/Pidl
 */
 
 
 #include "config.h"
-#include <glib.h>
 #include <string.h>
+#include <wsutil/array.h>
 #include <epan/packet.h>
+#include <epan/tfs.h>
 
 #include "packet-dcerpc.h"
 #include "packet-dcerpc-nt.h"
@@ -5671,10 +5672,10 @@ static int mapi_dissect_element_ActionData_BounceCode(tvbuff_t *tvb _U_, int off
 static int mapi_dissect_element_ActionData_PropValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_ActionData_ForwardAction(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_ActionData_DelegateAction(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_ActionBlockData_ActionType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ActionType);
+static int mapi_dissect_element_ActionBlockData_ActionType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ActionType);
 static int mapi_dissect_element_ActionBlockData_ActionFlavor(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_ActionBlockData_ActionFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_ActionBlockData_ActionDataBuffer(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ActionType);
+static int mapi_dissect_element_ActionBlockData_ActionDataBuffer(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ActionType);
 static int mapi_dissect_element_ActionBlock_ActionBlockData(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_RuleAction_count(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_RuleAction_ActionBlock(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -5757,12 +5758,12 @@ static int mapi_dissect_element_OpenFolder_Replicas_Servers(tvbuff_t *tvb _U_, i
 static int mapi_dissect_element_OpenFolder_Replicas_Servers_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_IsGhosted_Replicas(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_OpenFolder_Success_HasRules(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_OpenFolder_Success_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted);
-static int mapi_dissect_element_OpenFolder_Success_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted);
+static int mapi_dissect_element_OpenFolder_Success_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted);
+static int mapi_dissect_element_OpenFolder_Success_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted);
 static int mapi_dissect_element_OpenFolder_repl_status_Success(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_OpenFolder_repl_OutputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_OpenFolder_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
-static int mapi_dissect_element_OpenFolder_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
+static int mapi_dissect_element_OpenFolder_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
+static int mapi_dissect_element_OpenFolder_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
 const value_string mapi_StringType_vals[] = {
 	{ StringType_NONE, "StringType_NONE" },
 	{ StringType_EMPTY, "StringType_EMPTY" },
@@ -5774,8 +5775,8 @@ const value_string mapi_StringType_vals[] = {
 static int mapi_dissect_element_String_lpszA(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_String_lpszW_reduced(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_String_lpszW(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_TypedString_StringType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *StringType);
-static int mapi_dissect_element_TypedString_String(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *StringType);
+static int mapi_dissect_element_TypedString_StringType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *StringType);
+static int mapi_dissect_element_TypedString_String(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *StringType);
 const value_string mapi_OpenMessage_OpenModeFlags_vals[] = {
 	{ ReadOnly, "ReadOnly" },
 	{ ReadWrite, "ReadWrite" },
@@ -5848,8 +5849,8 @@ static int mapi_dissect_element_OpenMessage_Success_recipients(tvbuff_t *tvb _U_
 static int mapi_dissect_element_OpenMessage_Success_recipients_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_OpenMessage_repl_status_Success(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_OpenMessage_repl_OutputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_OpenMessage_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
-static int mapi_dissect_element_OpenMessage_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
+static int mapi_dissect_element_OpenMessage_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
+static int mapi_dissect_element_OpenMessage_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
 static const true_false_string TableFlags_TableFlags_Depth_tfs = {
    "TableFlags_Depth is SET",
    "TableFlags_Depth is NOT SET",
@@ -5881,8 +5882,8 @@ static int mapi_dissect_element_GetHierarchyTable_req_TableFlags(tvbuff_t *tvb _
 static int mapi_dissect_element_GetHierarchyTable_repl_success_RowCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetHierarchyTable_repl_status_Success(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetHierarchyTable_repl_OutputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_GetHierarchyTable_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
-static int mapi_dissect_element_GetHierarchyTable_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
+static int mapi_dissect_element_GetHierarchyTable_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
+static int mapi_dissect_element_GetHierarchyTable_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
 static int mapi_dissect_element_GetContentsTable_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetContentsTable_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetContentsTable_req_OutputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -5890,8 +5891,8 @@ static int mapi_dissect_element_GetContentsTable_req_TableFlags(tvbuff_t *tvb _U
 static int mapi_dissect_element_GetContentsTable_repl_success_RowCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetContentsTable_repl_status_Success(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetContentsTable_repl_OutputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_GetContentsTable_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
-static int mapi_dissect_element_GetContentsTable_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
+static int mapi_dissect_element_GetContentsTable_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
+static int mapi_dissect_element_GetContentsTable_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
 static int mapi_dissect_element_CreateMessage_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_CreateMessage_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_CreateMessage_req_OutputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -5899,12 +5900,12 @@ static int mapi_dissect_element_CreateMessage_req_CodePageId(tvbuff_t *tvb _U_, 
 static int mapi_dissect_element_CreateMessage_req_FolderId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_CreateMessage_req_AssociatedFlag(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_CreateMessage_MessageId_MessageId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_CreateMessage_repl_success_HasMessageId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *HasMessageId);
-static int mapi_dissect_element_CreateMessage_repl_success_MessageId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *HasMessageId);
+static int mapi_dissect_element_CreateMessage_repl_success_HasMessageId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *HasMessageId);
+static int mapi_dissect_element_CreateMessage_repl_success_MessageId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *HasMessageId);
 static int mapi_dissect_element_CreateMessage_repl_status_Success(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_CreateMessage_repl_OutputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_CreateMessage_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
-static int mapi_dissect_element_CreateMessage_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
+static int mapi_dissect_element_CreateMessage_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
+static int mapi_dissect_element_CreateMessage_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
 static int mapi_dissect_element_GetProps_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetProps_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetProps_req_PropertySizeLimit(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -5916,8 +5917,8 @@ static int mapi_dissect_element_GetProps_repl_success_layout(tvbuff_t *tvb _U_, 
 static int mapi_dissect_element_GetProps_repl_success_prop_data(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetProps_repl_status_Success(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetProps_repl_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_GetProps_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
-static int mapi_dissect_element_GetProps_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
+static int mapi_dissect_element_GetProps_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
+static int mapi_dissect_element_GetProps_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
 static int mapi_dissect_element_GetPropsAll_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetPropsAll_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetPropsAll_req_PropertySizeLimit(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -5925,8 +5926,8 @@ static int mapi_dissect_element_GetPropsAll_req_WantUnicode(tvbuff_t *tvb _U_, i
 static int mapi_dissect_element_GetPropsAll_repl_success_properties(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetPropsAll_repl_status_Success(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetPropsAll_repl_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_GetPropsAll_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
-static int mapi_dissect_element_GetPropsAll_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
+static int mapi_dissect_element_GetPropsAll_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
+static int mapi_dissect_element_GetPropsAll_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
 static int mapi_dissect_element_GetPropList_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetPropList_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetPropList_repl_count(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -6042,9 +6043,9 @@ static int mapi_dissect_element_SetMessageReadFlag_req_clientdata(tvbuff_t *tvb 
 static int mapi_dissect_element_SetMessageReadFlag_LogonId_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_SetMessageReadFlag_ClientData_ClientData(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_SetMessageReadFlag_ClientData_ClientData_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_SetMessageReadFlag_repl_ReadStatusChanged(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ReadStatusChanged);
-static int mapi_dissect_element_SetMessageReadFlag_repl_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ReadStatusChanged);
-static int mapi_dissect_element_SetMessageReadFlag_repl_ClientData(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ReadStatusChanged);
+static int mapi_dissect_element_SetMessageReadFlag_repl_ReadStatusChanged(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ReadStatusChanged);
+static int mapi_dissect_element_SetMessageReadFlag_repl_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ReadStatusChanged);
+static int mapi_dissect_element_SetMessageReadFlag_repl_ClientData(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ReadStatusChanged);
 const value_string mapi_SetColumnsFlags_vals[] = {
 	{ SetColumns_TBL_SYNC, "SetColumns_TBL_SYNC" },
 	{ SetColumns_TBL_ASYNC, "SetColumns_TBL_ASYNC" },
@@ -6156,8 +6157,8 @@ static int mapi_dissect_element_RestrictionVariable_res_(tvbuff_t *tvb _U_, int 
 static int mapi_dissect_element_SCommentRestriction_TaggedValuesCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_SCommentRestriction_TaggedValues(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_SCommentRestriction_TaggedValues_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_SCommentRestriction_RestrictionPresent(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *RestrictionPresent);
-static int mapi_dissect_element_SCommentRestriction_Restriction(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *RestrictionPresent);
+static int mapi_dissect_element_SCommentRestriction_RestrictionPresent(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *RestrictionPresent);
+static int mapi_dissect_element_SCommentRestriction_Restriction(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *RestrictionPresent);
 static int mapi_dissect_element_SRestriction_CTR_resAnd(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_SRestriction_CTR_resOr(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_SRestriction_CTR_resNot(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -6169,16 +6170,16 @@ static int mapi_dissect_element_SRestriction_CTR_resSize(tvbuff_t *tvb _U_, int 
 static int mapi_dissect_element_SRestriction_CTR_resExist(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_SRestriction_CTR_resSub(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_SRestriction_CTR_resComment(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_SRestriction_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt);
-static int mapi_dissect_element_SRestriction_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt);
-static int mapi_dissect_element_SRestriction_and_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt);
-static int mapi_dissect_element_SRestriction_and_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt);
-static int mapi_dissect_element_SRestriction_or_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt);
-static int mapi_dissect_element_SRestriction_or_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt);
-static int mapi_dissect_element_SRestriction_sub_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt);
-static int mapi_dissect_element_SRestriction_sub_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt);
-static int mapi_dissect_element_SRestriction_comment_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt);
-static int mapi_dissect_element_SRestriction_comment_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt);
+static int mapi_dissect_element_SRestriction_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt);
+static int mapi_dissect_element_SRestriction_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt);
+static int mapi_dissect_element_SRestriction_and_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt);
+static int mapi_dissect_element_SRestriction_and_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt);
+static int mapi_dissect_element_SRestriction_or_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt);
+static int mapi_dissect_element_SRestriction_or_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt);
+static int mapi_dissect_element_SRestriction_sub_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt);
+static int mapi_dissect_element_SRestriction_sub_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt);
+static int mapi_dissect_element_SRestriction_comment_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt);
+static int mapi_dissect_element_SRestriction_comment_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt);
 static int mapi_dissect_element_Restrict_req_handle_idx(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_Restrict_req_restrictions(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_Restrict_repl_TableStatus(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -6253,17 +6254,17 @@ static int mapi_dissect_element_CreateFolder_req_LogonId(tvbuff_t *tvb _U_, int 
 static int mapi_dissect_element_CreateFolder_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_CreateFolder_req_OutputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_CreateFolder_req_ulFolderType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_CreateFolder_req_ulType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ulType);
+static int mapi_dissect_element_CreateFolder_req_ulType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ulType);
 static int mapi_dissect_element_CreateFolder_req_ulFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_CreateFolder_req_FolderName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ulType);
-static int mapi_dissect_element_CreateFolder_req_FolderComment(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ulType);
+static int mapi_dissect_element_CreateFolder_req_FolderName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ulType);
+static int mapi_dissect_element_CreateFolder_req_FolderComment(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ulType);
 static int mapi_dissect_element_CreateFolder_GhostInfo_HasRules(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_CreateFolder_GhostInfo_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted);
-static int mapi_dissect_element_CreateFolder_GhostInfo_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted);
+static int mapi_dissect_element_CreateFolder_GhostInfo_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted);
+static int mapi_dissect_element_CreateFolder_GhostInfo_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted);
 static int mapi_dissect_element_CreateFolder_GhostUnion_GhostInfo(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_CreateFolder_repl_folder_id(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_CreateFolder_repl_IsExistingFolder(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsExistingFolder);
-static int mapi_dissect_element_CreateFolder_repl_GhostUnion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsExistingFolder);
+static int mapi_dissect_element_CreateFolder_repl_IsExistingFolder(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsExistingFolder);
+static int mapi_dissect_element_CreateFolder_repl_GhostUnion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsExistingFolder);
 static const true_false_string DeleteFolderFlags_DEL_MESSAGES_tfs = {
    "DEL_MESSAGES is SET",
    "DEL_MESSAGES is NOT SET",
@@ -6380,8 +6381,8 @@ static int mapi_dissect_element_RegisterNotification_req_LogonId(tvbuff_t *tvb _
 static int mapi_dissect_element_RegisterNotification_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_RegisterNotification_req_OutputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_RegisterNotification_req_notificationFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_RegisterNotification_req_layout(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *layout);
-static int mapi_dissect_element_RegisterNotification_req_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *layout);
+static int mapi_dissect_element_RegisterNotification_req_layout(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *layout);
+static int mapi_dissect_element_RegisterNotification_req_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *layout);
 static const true_false_string MsgFlags_MSGFLAG_READ_tfs = {
    "MSGFLAG_READ is SET",
    "MSGFLAG_READ is NOT SET",
@@ -6438,8 +6439,8 @@ const value_string mapi_RichTableNotificationType_vals[] = {
 static int mapi_dissect_element_NewMailNotification_FID(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_NewMailNotification_MID(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_NewMailNotification_MessageFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_NewMailNotification_UnicodeFlag(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *UnicodeFlag);
-static int mapi_dissect_element_NewMailNotification_MessageClass(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *UnicodeFlag);
+static int mapi_dissect_element_NewMailNotification_UnicodeFlag(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *UnicodeFlag);
+static int mapi_dissect_element_NewMailNotification_MessageClass(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *UnicodeFlag);
 static int mapi_dissect_element_FolderCreatedNotification_FID(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_FolderCreatedNotification_ParentFID(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_FolderCreatedNotification_TagCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -6466,8 +6467,8 @@ static int mapi_dissect_element_HierarchyRowModifiedNotification_Columns(tvbuff_
 static int mapi_dissect_element_HierarchyTableChangeUnion_HierarchyRowAddedNotification(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_HierarchyTableChangeUnion_HierarchyRowDeletedNotification(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_HierarchyTableChangeUnion_HierarchyRowModifiedNotification(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_HierarchyTableChange_TableEvent(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *TableEvent);
-static int mapi_dissect_element_HierarchyTableChange_HierarchyTableChangeUnion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *TableEvent);
+static int mapi_dissect_element_HierarchyTableChange_TableEvent(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *TableEvent);
+static int mapi_dissect_element_HierarchyTableChange_HierarchyTableChangeUnion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *TableEvent);
 static int mapi_dissect_element_IcsNotification_HierChanged(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_IcsNotification_GIDCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_IcsNotification_GID(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -6524,8 +6525,8 @@ static int mapi_dissect_element_ContentsRowModifiedNotification_Columns(tvbuff_t
 static int mapi_dissect_element_ContentsTableChangeUnion_ContentsRowAddedNotification(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_ContentsTableChangeUnion_ContentsRowDeletedNotification(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_ContentsTableChangeUnion_ContentsRowModifiedNotification(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_ContentsTableChange_TableEvent(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *TableEvent);
-static int mapi_dissect_element_ContentsTableChange_ContentsTableChangeUnion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *TableEvent);
+static int mapi_dissect_element_ContentsTableChange_TableEvent(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *TableEvent);
+static int mapi_dissect_element_ContentsTableChange_ContentsTableChangeUnion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *TableEvent);
 static int mapi_dissect_element_SearchMessageCreatedNotification_FID(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_SearchMessageCreatedNotification_MID(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_SearchMessageCreatedNotification_SearchFID(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -6565,8 +6566,8 @@ static int mapi_dissect_element_NotificationData_SearchMessageModifiedNotificati
 static int mapi_dissect_element_NotificationData_SearchTableChange(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_Notify_repl_NotificationHandle(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_Notify_repl_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_Notify_repl_NotificationType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *NotificationType);
-static int mapi_dissect_element_Notify_repl_NotificationData(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *NotificationType);
+static int mapi_dissect_element_Notify_repl_NotificationType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *NotificationType);
+static int mapi_dissect_element_Notify_repl_NotificationData(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *NotificationType);
 const value_string mapi_OpenStream_OpenModeFlags_vals[] = {
 	{ OpenStream_ReadOnly, "OpenStream_ReadOnly" },
 	{ OpenStream_ReadWrite, "OpenStream_ReadWrite" },
@@ -6583,8 +6584,8 @@ static int mapi_dissect_element_OpenStream_repl_StreamSize(tvbuff_t *tvb _U_, in
 static int mapi_dissect_element_MaximumByteCount_value(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_ReadStream_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_ReadStream_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_ReadStream_req_ByteCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *ByteCount);
-static int mapi_dissect_element_ReadStream_req_MaximumByteCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *ByteCount);
+static int mapi_dissect_element_ReadStream_req_ByteCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *ByteCount);
+static int mapi_dissect_element_ReadStream_req_MaximumByteCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *ByteCount);
 static int mapi_dissect_element_ReadStream_repl_data(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_WriteStream_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_WriteStream_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -6676,16 +6677,16 @@ static int mapi_dissect_element_Folder_name_lpszA(tvbuff_t *tvb _U_, int offset 
 static int mapi_dissect_element_Folder_name_lpszW(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_MoveFolder_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_MoveFolder_req_WantAsynchronous(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_MoveFolder_req_UseUnicode(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *UseUnicode);
+static int mapi_dissect_element_MoveFolder_req_UseUnicode(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *UseUnicode);
 static int mapi_dissect_element_MoveFolder_req_FolderId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_MoveFolder_req_NewFolderName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *UseUnicode);
+static int mapi_dissect_element_MoveFolder_req_NewFolderName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *UseUnicode);
 static int mapi_dissect_element_MoveFolder_repl_PartialCompletion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_CopyFolder_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_CopyFolder_req_WantAsynchronous(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_CopyFolder_req_WantRecursive(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_CopyFolder_req_UseUnicode(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *UseUnicode);
+static int mapi_dissect_element_CopyFolder_req_UseUnicode(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *UseUnicode);
 static int mapi_dissect_element_CopyFolder_req_FolderId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_CopyFolder_req_NewFolderName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *UseUnicode);
+static int mapi_dissect_element_CopyFolder_req_NewFolderName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *UseUnicode);
 static int mapi_dissect_element_CopyFolder_repl_PartialCompletion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_QueryColumnsAll_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_QueryColumnsAll_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -6780,8 +6781,8 @@ static int mapi_dissect_element_LongTermId_padding(tvbuff_t *tvb _U_, int offset
 static int mapi_dissect_element_LongTermIdFromId_repl_Success_LongTermId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_LongTermIdFromId_repl_status_Success(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_LongTermIdFromId_repl_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_LongTermIdFromId_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
-static int mapi_dissect_element_LongTermIdFromId_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue);
+static int mapi_dissect_element_LongTermIdFromId_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
+static int mapi_dissect_element_LongTermIdFromId_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue);
 static int mapi_dissect_element_IdFromLongTermId_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_IdFromLongTermId_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_IdFromLongTermId_req_LongTermId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -6789,8 +6790,8 @@ static int mapi_dissect_element_IdFromLongTermId_repl_Id(tvbuff_t *tvb _U_, int 
 static int mapi_dissect_element_PublicFolderIsGhosted_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_PublicFolderIsGhosted_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_PublicFolderIsGhosted_req_FolderId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_PublicFolderIsGhosted_repl_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted);
-static int mapi_dissect_element_PublicFolderIsGhosted_repl_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted);
+static int mapi_dissect_element_PublicFolderIsGhosted_repl_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted);
+static int mapi_dissect_element_PublicFolderIsGhosted_repl_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted);
 const value_string mapi_OpenEmbeddedMessage_OpenModeFlags_vals[] = {
 	{ MAPI_READONLY, "MAPI_READONLY" },
 	{ MAPI_READWRITE, "MAPI_READWRITE" },
@@ -6835,8 +6836,8 @@ static int mapi_dissect_element_AddressTypes_repl_transport_(tvbuff_t *tvb _U_, 
 static int mapi_dissect_element_TransportSend_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_TransportSend_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_TransportSend_lpProps_lpProps(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_TransportSend_repl_NoPropertiesReturned(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *NoPropertiesReturned);
-static int mapi_dissect_element_TransportSend_repl_properties(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *NoPropertiesReturned);
+static int mapi_dissect_element_TransportSend_repl_NoPropertiesReturned(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *NoPropertiesReturned);
+static int mapi_dissect_element_TransportSend_repl_properties(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *NoPropertiesReturned);
 static int mapi_dissect_element_FastTransferSourceGetBuffer_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_FastTransferSourceGetBuffer_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_FastTransferSourceGetBuffer_req_BufferSize(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -6891,9 +6892,9 @@ static int mapi_dissect_element_name_NameSize(tvbuff_t *tvb _U_, int offset _U_,
 static int mapi_dissect_element_name_Name(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_Kind_lid(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_Kind_lpwstr(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_MAPINAMEID_ulKind(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ulKind);
+static int mapi_dissect_element_MAPINAMEID_ulKind(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ulKind);
 static int mapi_dissect_element_MAPINAMEID_lpguid(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_MAPINAMEID_kind(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ulKind);
+static int mapi_dissect_element_MAPINAMEID_kind(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ulKind);
 static int mapi_dissect_element_GetNamesFromIDs_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetNamesFromIDs_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_GetNamesFromIDs_req_PropertyIdCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -6958,8 +6959,8 @@ static int mapi_dissect_element_QueryNamedProperties_guid_guid(tvbuff_t *tvb _U_
 static int mapi_dissect_element_QueryNamedProperties_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_QueryNamedProperties_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_QueryNamedProperties_req_QueryFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_QueryNamedProperties_req_HasGuid(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *HasGuid);
-static int mapi_dissect_element_QueryNamedProperties_req_PropertyGuid(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *HasGuid);
+static int mapi_dissect_element_QueryNamedProperties_req_HasGuid(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *HasGuid);
+static int mapi_dissect_element_QueryNamedProperties_req_PropertyGuid(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *HasGuid);
 static int mapi_dissect_element_QueryNamedProperties_repl_IdCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_QueryNamedProperties_repl_PropertyIds(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_QueryNamedProperties_repl_PropertyIds_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -7030,10 +7031,10 @@ static int mapi_dissect_element_OptionsData_req_WantWin32(tvbuff_t *tvb _U_, int
 static int mapi_dissect_element_OptionsData_HelpFileName_HelpFileName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_OptionsData_repl_Reserved(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_OptionsData_repl_OptionsInfo(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_OptionsData_repl_HelpFileSize(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *HelpFileSize);
+static int mapi_dissect_element_OptionsData_repl_HelpFileSize(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *HelpFileSize);
 static int mapi_dissect_element_OptionsData_repl_HelpFile(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_OptionsData_repl_HelpFile_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_OptionsData_repl_HelpFileName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *HelpFileSize);
+static int mapi_dissect_element_OptionsData_repl_HelpFileName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *HelpFileSize);
 const value_string mapi_SynchronizationType_vals[] = {
 	{ Contents, "Contents" },
 	{ Hierarchy, "Hierarchy" },
@@ -7213,8 +7214,8 @@ static int mapi_dissect_element_SyncGetTransferState_req_OutputHandleIndex(tvbuf
 static int mapi_dissect_element_OpenPublicFolderByName_req_handle_idx(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_OpenPublicFolderByName_req_name(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_OpenPublicFolderByName_repl_HasRules(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_OpenPublicFolderByName_repl_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted);
-static int mapi_dissect_element_OpenPublicFolderByName_repl_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted);
+static int mapi_dissect_element_OpenPublicFolderByName_repl_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted);
+static int mapi_dissect_element_OpenPublicFolderByName_repl_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted);
 static int mapi_dissect_element_SetSyncNotificationGuid_req_NotificationGuid(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_FreeBookmark_req_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_FreeBookmark_req_InputHandleIndex(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -7565,8 +7566,8 @@ static int mapi_dissect_element_RopReply_HardDeleteMessages(tvbuff_t *tvb _U_, i
 static int mapi_dissect_element_RopReply_HardDeleteMessagesAndSubfolders(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_RopReply_Logon(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_RopReply_RopBufferTooSmall(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_EcDoRpcMapiRequest_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *opnum);
-static int mapi_dissect_element_EcDoRpcMapiResponse_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *opnum);
+static int mapi_dissect_element_EcDoRpcMapiRequest_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *opnum);
+static int mapi_dissect_element_EcDoRpcMapiResponse_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *opnum);
 static int mapi_dissect_element_request_rpcRequest(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_response_rpcResponse(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 const value_string mapi_AUX_HEADER_TYPE_1_vals[] = {
@@ -7807,7 +7808,7 @@ static int mapi_dissect_element_AuxDataVersion2_AuxiliaryPerfFgFailure(tvbuff_t 
 static int mapi_dissect_element_AuxDataVersion2_AuxiliaryOSVersionInfo(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_AuxDataVersion2_AuxiliaryEXOrgInfo(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_AuxDataVersion2_Payload(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_AUX_HEADER_Version(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *Version);
+static int mapi_dissect_element_AUX_HEADER_Version(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *Version);
 static const true_false_string RPC_HEADER_EXT_Flags_RHEF_Compressed_tfs = {
    "RHEF_Compressed is SET",
    "RHEF_Compressed is NOT SET",
@@ -7840,15 +7841,15 @@ static const true_false_string RpcExt2Flags_Chain_tfs = {
    "Chain is SET",
    "Chain is NOT SET",
 };
-static int mapi_dissect_element_RopInput_RopId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *RopId);
-static int mapi_dissect_element_RopInput_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *RopId);
+static int mapi_dissect_element_RopInput_RopId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *RopId);
+static int mapi_dissect_element_RopInput_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *RopId);
 static int mapi_dissect_element_ROPInputBuffer_ropSize(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_ROPInputBuffer_rop(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_ROPInputBuffer_rop_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_ROPInputBuffer_objectHandles(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_ROPInputBuffer_objectHandles_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
-static int mapi_dissect_element_RopOutput_RopId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *RopId);
-static int mapi_dissect_element_RopOutput_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *RopId);
+static int mapi_dissect_element_RopOutput_RopId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *RopId);
+static int mapi_dissect_element_RopOutput_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *RopId);
 static int mapi_dissect_element_ROPOutputBuffer_ropSize(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_ROPOutputBuffer_rop(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_ROPOutputBuffer_rop_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
@@ -8019,22 +8020,22 @@ static int mapi_dissect_element_EcDoAsyncConnectEx_cxh_(tvbuff_t *tvb _U_, int o
 static int mapi_dissect_element_EcDoAsyncConnectEx_pacxh(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static int mapi_dissect_element_EcDoAsyncConnectEx_pacxh_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_);
 static tvbuff_t *
-mapi_deobfuscate(tvbuff_t *tvb, int offset, packet_info *pinfo, guint32 size)
+mapi_deobfuscate(tvbuff_t *tvb, int offset, packet_info *pinfo, uint32_t size)
 {
 	tvbuff_t *deob_tvb = NULL;
-	guint8 *decrypted_data;
-	const guint8 *ptr;
-	gint reported_len;
+	uint8_t *decrypted_data;
+	const uint8_t *ptr;
+	int reported_len;
 	reported_len = tvb_reported_length_remaining(tvb, offset);
-	if ((guint32) reported_len > size) {
+	if ((uint32_t) reported_len > size) {
 		reported_len = size;
 	}
-	if (size > (guint32) reported_len) {
+	if (size > (uint32_t) reported_len) {
 		size = reported_len;
 	}
 	ptr = tvb_get_ptr(tvb, offset, size);
-	decrypted_data = (guint8 *)wmem_alloc0(pinfo->pool, size);
-	for (guint32 i = 0; i < size; i++) {
+	decrypted_data = (uint8_t *)wmem_alloc0(pinfo->pool, size);
+	for (uint32_t i = 0; i < size; i++) {
 		decrypted_data[i] = ptr[i] ^ 0xA5;
 	}
 	deob_tvb = tvb_new_child_real_data(tvb, decrypted_data, size, reported_len);
@@ -8043,10 +8044,10 @@ mapi_deobfuscate(tvbuff_t *tvb, int offset, packet_info *pinfo, guint32 size)
 /* [MS-OXCRPC] 3.1.4.1.3.1 Version Number Comparison
 */
 static int
-normalize_version(tvbuff_t *tvb, packet_info *pinfo, int offset, proto_tree *tree, int hf_index, const gchar * str)
+normalize_version(tvbuff_t *tvb, packet_info *pinfo, int offset, proto_tree *tree, int hf_index, const char * str)
 {
-	guint16 version_0, build_major, product_major, product_minor;
-	gchar *value;
+	uint16_t version_0, build_major, product_major, product_minor;
+	char *value;
 	version_0= tvb_get_letohs(tvb, offset);
 	build_major= tvb_get_letohs(tvb, offset + 2);
 	if(build_major & 0x8000){
@@ -8076,42 +8077,42 @@ normalize_version(tvbuff_t *tvb, packet_info *pinfo, int offset, proto_tree *tre
 	return offset + 6;
 }
 static int
-mapi_dissect_element_EcDoConnect_rgwClientVersion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+mapi_dissect_element_EcDoConnect_rgwClientVersion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	return normalize_version(tvb, pinfo, offset, tree, hf_mapi_mapi_EcDoConnect_rgwClientVersion, "rgwClientVersion");
 }
 static int
-mapi_dissect_element_EcDoConnect_rgwServerVersion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+mapi_dissect_element_EcDoConnect_rgwServerVersion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	return normalize_version(tvb, pinfo, offset, tree, hf_mapi_mapi_EcDoConnect_rgwServerVersion, "rgwServerVersion");
 }
 static int
-mapi_dissect_element_EcDoConnect_rgwBestVersion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+mapi_dissect_element_EcDoConnect_rgwBestVersion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	return normalize_version(tvb, pinfo, offset, tree, hf_mapi_mapi_EcDoConnect_rgwBestVersion, "rgwBestVersion");
 }
 static int
-mapi_dissect_element_EcDoConnectEx_rgwClientVersion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+mapi_dissect_element_EcDoConnectEx_rgwClientVersion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	return normalize_version(tvb, pinfo, offset, tree, hf_mapi_mapi_EcDoConnectEx_rgwClientVersion, "rgwClientVersion");
 }
 static int
-mapi_dissect_element_EcDoConnectEx_rgwServerVersion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+mapi_dissect_element_EcDoConnectEx_rgwServerVersion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	return normalize_version(tvb, pinfo, offset, tree, hf_mapi_mapi_EcDoConnectEx_rgwServerVersion, "rgwServerVersion");
 }
 static int
-mapi_dissect_element_EcDoConnectEx_rgwBestVersion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+mapi_dissect_element_EcDoConnectEx_rgwBestVersion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	return normalize_version(tvb, pinfo, offset, tree, hf_mapi_mapi_EcDoConnectEx_rgwBestVersion, "rgwBestVersion");
 }
 static int
-mapi_dissect_element_EcDoRpc_request(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+mapi_dissect_element_EcDoRpc_request(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	return mapi_dissect_struct_request(tvb, offset, pinfo, tree, di, drep, hf_mapi_mapi_EcDoRpc_mapi_request, 0);
 }
 static int
-mapi_dissect_element_EcDoRpc_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+mapi_dissect_element_EcDoRpc_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	return mapi_dissect_struct_response(tvb, offset, pinfo, tree, di, drep, hf_mapi_mapi_EcDoRpc_mapi_response, 0);
 }
@@ -8119,16 +8120,16 @@ mapi_dissect_element_EcDoRpc_response(tvbuff_t *tvb _U_, int offset _U_, packet_
  * Analyze mapi_request MAPI Handles
  */
 static int
-mapi_dissect_element_handles_cnf(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, int hf_index _U_, guint8 *drep _U_)
+mapi_dissect_element_handles_cnf(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, int hf_index _U_, uint8_t *drep _U_)
 {
-	gint		reported_len;
-	gint		handles_cnt = 0;
-	guint32		value;
+	int		reported_len;
+	int		handles_cnt = 0;
+	uint32_t		value;
 	proto_tree	*tr = NULL;
 	reported_len = tvb_reported_length_remaining(tvb, offset);
 	handles_cnt = reported_len / 4;
 	tr = proto_tree_add_subtree_format(tree, tvb, offset, reported_len, ett_mapi_mapi_request, NULL, "MAPI Handles: %d", handles_cnt);
-	for (gint i = 0; i < handles_cnt; i++) {
+	for (int i = 0; i < handles_cnt; i++) {
 		value = tvb_get_letohl(tvb, offset);
 		proto_tree_add_uint_format(tr, hf_index, tvb, offset, 4, value, "[%.2d] MAPI handle: 0x%.8x", i, value);
 		offset += 4;
@@ -8136,14 +8137,14 @@ mapi_dissect_element_handles_cnf(tvbuff_t *tvb _U_, int offset _U_, packet_info 
 	return offset;
 }
 int
-mapi_dissect_struct_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_, int hf_index _U_, guint32 param _U_)
+mapi_dissect_struct_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int start_offset = offset;
 	tvbuff_t	*decrypted_tvb;
-	guint32		size;
-	guint16		pdu_len;
+	uint32_t		size;
+	uint16_t		pdu_len;
 	ALIGN_TO_5_BYTES;
 	if (parent_tree) {
 		item = proto_tree_add_item(parent_tree, hf_index, tvb, start_offset, -1, ENC_NA);
@@ -8160,10 +8161,10 @@ mapi_dissect_struct_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pin
 		add_new_data_source(pinfo, decrypted_tvb, "Decrypted MAPI Response");
 		tree = proto_tree_add_subtree(tree, decrypted_tvb, 0, size, ett_mapi_mapi_response, NULL, "Decrypted MAPI Response PDU");
 		pdu_len = tvb_get_letohs(decrypted_tvb, 0);
-		proto_tree_add_uint(tree, hf_mapi_mapi_response_length, decrypted_tvb, 0, sizeof(guint16), pdu_len);
-		proto_tree_add_item(tree, hf_mapi_decrypted_data, decrypted_tvb, sizeof(guint16), pdu_len - sizeof(guint16), ENC_NA);
+		proto_tree_add_uint(tree, hf_mapi_mapi_response_length, decrypted_tvb, 0, sizeof(uint16_t), pdu_len);
+		proto_tree_add_item(tree, hf_mapi_decrypted_data, decrypted_tvb, sizeof(uint16_t), pdu_len - sizeof(uint16_t), ENC_NA);
 		/* analyze contents */
-		mapi_dissect_element_response_rpcResponse(decrypted_tvb, sizeof(guint16), pinfo, tree, di, drep);
+		mapi_dissect_element_response_rpcResponse(decrypted_tvb, sizeof(uint16_t), pinfo, tree, di, drep);
 		mapi_dissect_element_handles_cnf(decrypted_tvb, pdu_len, pinfo, tree, di, hf_mapi_mapi_response_handles, drep);
 	}
 	if (di->call_data->flags & DCERPC_IS_NDR64) {
@@ -8172,19 +8173,19 @@ mapi_dissect_struct_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pin
 	return offset;
 }
 static int
-mapi_dissect_element_AuxInfo_auxHeader(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+mapi_dissect_element_AuxInfo_auxHeader(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint total_length = tvb_reported_length(tvb);
+	unsigned total_length = tvb_reported_length(tvb);
 	if(di->conformant_run){
 		return offset;
 	}
-	while(offset >= 0 && (guint)offset < total_length){
+	while(offset >= 0 && (unsigned)offset < total_length){
 		offset = mapi_dissect_struct_AUX_HEADER(tvb,offset,pinfo,tree,di,drep,di->ptype == PDU_REQ ? hf_mapi_AuxInfo_auxHeader : hf_mapi_AuxInfoOut_auxHeader ,0);
 	}
 	return offset;
 }
 static int
-dissect_EcDoConnectEx_AuxInfoOut(tvbuff_t *tvb _U_, int offset _U_, int length _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+dissect_EcDoConnectEx_AuxInfoOut(tvbuff_t *tvb _U_, int offset _U_, int length _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	if (length == 0){
 		return offset;
@@ -8192,12 +8193,12 @@ dissect_EcDoConnectEx_AuxInfoOut(tvbuff_t *tvb _U_, int offset _U_, int length _
 	return mapi_dissect_struct_AuxInfo(tvb, offset, pinfo, parent_tree, di, drep, hf_mapi_mapi_EcDoConnectEx_rgbAuxOut, 0);
 }
 static int
-mapi_dissect_element_EcDoConnectEx_rgbAuxOut_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+mapi_dissect_element_EcDoConnectEx_rgbAuxOut_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	return dissect_ndr_ucvarray_block(tvb, offset, pinfo, tree, di, drep, &dissect_EcDoConnectEx_AuxInfoOut);
 }
 static int
-dissect_EcDoRpcExt2_AuxInfoOut(tvbuff_t *tvb _U_, int offset _U_, int length _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+dissect_EcDoRpcExt2_AuxInfoOut(tvbuff_t *tvb _U_, int offset _U_, int length _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	if (length == 0){
 		return offset;
@@ -8205,27 +8206,27 @@ dissect_EcDoRpcExt2_AuxInfoOut(tvbuff_t *tvb _U_, int offset _U_, int length _U_
 	return mapi_dissect_struct_AuxInfo(tvb, offset, pinfo, parent_tree, di, drep, hf_mapi_mapi_EcDoRpcExt2_rgbAuxOut, 0);
 }
 static int
-mapi_dissect_element_EcDoRpcExt2_rgbAuxOut_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+mapi_dissect_element_EcDoRpcExt2_rgbAuxOut_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	return dissect_ndr_ucvarray_block(tvb, offset, pinfo, tree, di, drep, &dissect_EcDoRpcExt2_AuxInfoOut);
 }
 int
-mapi_dissect_struct_AUX_PERF_CLIENTINFO(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_, int hf_index _U_, guint32 param _U_)
+mapi_dissect_struct_AUX_PERF_CLIENTINFO(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
-	gboolean oldalign = di->no_align;
+	bool oldalign = di->no_align;
 	int old_offset, cur_end_offset;
-	guint16 MachineNameOffset;
-	guint16 UserNameOffset;
-	guint16 ClientIPSize;
-	guint16 ClientIPOffset;
-	guint16 ClientIPMaskSize;
-	guint16 ClientIPMaskOffset;
-	guint16 AdapterNameOffset;
-	guint16 MacAddressSize;
-	guint16 MacAddressOffset;
-	di->no_align = TRUE;
+	uint16_t MachineNameOffset;
+	uint16_t UserNameOffset;
+	uint16_t ClientIPSize;
+	uint16_t ClientIPOffset;
+	uint16_t ClientIPMaskSize;
+	uint16_t ClientIPMaskOffset;
+	uint16_t AdapterNameOffset;
+	uint16_t MacAddressSize;
+	uint16_t MacAddressOffset;
+	di->no_align = true;
 	old_offset = offset;
 	if (parent_tree) {
 		item = proto_tree_add_item(parent_tree, hf_index, tvb, offset, -1, ENC_NA);
@@ -8288,11 +8289,11 @@ mapi_dissect_struct_AUX_PERF_CLIENTINFO(tvbuff_t *tvb _U_, int offset _U_, packe
 	return offset;
 }
 static int
-mapi_dissect_AuxDataVersion1(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_, int hf_index _U_, guint32 param _U_);
+mapi_dissect_AuxDataVersion1(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_);
 static int
-mapi_dissect_AuxDataVersion2(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_, int hf_index _U_, guint32 param _U_);
+mapi_dissect_AuxDataVersion2(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_);
 static int
-mapi_dissect_AUX_DATA(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_, guint8 Version, int hf_index _U_, guint8 hdrType)
+mapi_dissect_AUX_DATA(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t Version, int hf_index _U_, uint8_t hdrType)
 {
 	switch(Version) {
 		case AUX_VERSION_1:
@@ -8304,7 +8305,7 @@ mapi_dissect_AUX_DATA(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_,
 	}
 }
 static int
-mapi_dissect_AUX_HEADER_TYPE_ENUM(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_, guint8 Version, int hf_index _U_, guint8 *hdrType)
+mapi_dissect_AUX_HEADER_TYPE_ENUM(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t Version, int hf_index _U_, uint8_t *hdrType)
 {
 	switch(Version) {
 		case AUX_VERSION_1:
@@ -8316,15 +8317,15 @@ mapi_dissect_AUX_HEADER_TYPE_ENUM(tvbuff_t *tvb _U_, int offset _U_, packet_info
 	}
 }
 int
-mapi_dissect_struct_AUX_HEADER(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_, int hf_index _U_, guint32 param _U_)
+mapi_dissect_struct_AUX_HEADER(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint16 auxSize = 0;
-	guint8 Version = 0;
-	guint8 hdrType = 0;
+	uint16_t auxSize = 0;
+	uint8_t Version = 0;
+	uint8_t hdrType = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
-	gboolean oldalign = di->no_align;
-	di->no_align = TRUE;
+	bool oldalign = di->no_align;
+	di->no_align = true;
 	if (parent_tree) {
 		item = proto_tree_add_item(parent_tree, hf_index, tvb, offset, -1, ENC_NA);
 		tree = proto_item_add_subtree(item, ett_mapi_AUX_HEADER);
@@ -8338,14 +8339,14 @@ mapi_dissect_struct_AUX_HEADER(tvbuff_t *tvb _U_, int offset _U_, packet_info *p
 	return offset;
 }
 int
-mapi_dissect_struct_EcDoRpcMapiRequest(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, dcerpc_info* di, guint8 *drep, int hf_index, guint32 param)
+mapi_dissect_struct_EcDoRpcMapiRequest(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, dcerpc_info* di, uint8_t *drep, int hf_index, uint32_t param)
 {
-	guint8 opnum = 0;
+	uint8_t opnum = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
-	gboolean oldalign = di->no_align;
+	bool oldalign = di->no_align;
 	int old_offset;
-	di->no_align = TRUE;
+	di->no_align = true;
 	old_offset = offset;
 	if (parent_tree) {
 		item = proto_tree_add_item(parent_tree, hf_index, tvb, offset, -1, ENC_NA);
@@ -8359,14 +8360,14 @@ mapi_dissect_struct_EcDoRpcMapiRequest(tvbuff_t *tvb, int offset, packet_info *p
 	return offset;
 }
 int
-mapi_dissect_struct_request(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, dcerpc_info* di, guint8 *drep, int hf_index, guint32 param _U_)
+mapi_dissect_struct_request(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, dcerpc_info* di, uint8_t *drep, int hf_index, uint32_t param _U_)
 {
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
-	int start_offset = offset;;
+	int start_offset = offset;
 	tvbuff_t *decrypted_tvb = NULL;
-	guint16		pdu_len;
-	guint32		size;
+	uint16_t		pdu_len;
+	uint32_t		size;
 	ALIGN_TO_5_BYTES;
 	if (parent_tree) {
 		item = proto_tree_add_item(parent_tree, hf_index, tvb, offset, -1, ENC_NA);
@@ -8395,32 +8396,32 @@ mapi_dissect_struct_request(tvbuff_t *tvb, int offset, packet_info *pinfo, proto
 	return offset;
 }
 static int
-mapi_dissect_element_EcDoConnect_szUserDN(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+mapi_dissect_element_EcDoConnect_szUserDN(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	char *data= NULL;
-	offset = dissect_ndr_cvstring(tvb, offset, pinfo, tree, di, drep, sizeof(guint8), hf_mapi_mapi_EcDoConnect_szUserDN, FALSE, &data);
+	offset = dissect_ndr_cvstring(tvb, offset, pinfo, tree, di, drep, sizeof(uint8_t), hf_mapi_mapi_EcDoConnect_szUserDN, false, &data);
 	proto_item_append_text(tree, ": %s", data);
 	col_append_fstr(pinfo->cinfo, COL_INFO, " DN: %s", data);
 	return offset;
 }
 static int
-mapi_dissect_element_EcDoConnectEx_szUserDN(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+mapi_dissect_element_EcDoConnectEx_szUserDN(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	char *data= NULL;
-	offset = dissect_ndr_cvstring(tvb, offset, pinfo, tree, di, drep, sizeof(guint8), hf_mapi_mapi_EcDoConnectEx_szUserDN, FALSE, &data);
+	offset = dissect_ndr_cvstring(tvb, offset, pinfo, tree, di, drep, sizeof(uint8_t), hf_mapi_mapi_EcDoConnectEx_szUserDN, false, &data);
 	proto_item_append_text(tree, ": %s", data);
 	col_append_fstr(pinfo->cinfo, COL_INFO, " DN: %s", data);
 	return offset;
 }
 int
-mapi_dissect_struct_EcDoRpcMapiResponse(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, dcerpc_info* di, guint8 *drep, int hf_index, guint32 param)
+mapi_dissect_struct_EcDoRpcMapiResponse(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, dcerpc_info* di, uint8_t *drep, int hf_index, uint32_t param)
 {
-	guint8 opnum = 0;
+	uint8_t opnum = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
-	gboolean oldalign = di->no_align;
+	bool oldalign = di->no_align;
 	int old_offset= offset;
-	di->no_align = TRUE;
+	di->no_align = true;
 	if (parent_tree) {
 		item = proto_tree_add_item(parent_tree, hf_index, tvb, offset, -1, ENC_NA);
 		tree = proto_item_add_subtree(item, ett_mapi_EcDoRpcMapiResponse);
@@ -8433,21 +8434,21 @@ mapi_dissect_struct_EcDoRpcMapiResponse(tvbuff_t *tvb, int offset, packet_info *
 	return offset;
 }
 static int
-uint32_size_uint8_buffer(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, dcerpc_info* di, guint8 *drep, int hf_size_index, int hf_buffer_index, guint32 param)
+uint32_size_uint8_buffer(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, dcerpc_info* di, uint8_t *drep, int hf_size_index, int hf_buffer_index, uint32_t param)
 {
-	guint32 size= 0;
+	uint32_t size= 0;
 	offset = PIDL_dissect_uint32_val(tvb, offset, pinfo, parent_tree, di, drep, hf_size_index, param, &size);
 	proto_tree_add_item(parent_tree, hf_buffer_index, tvb, offset, size, ENC_NA);
 	return offset+size;
 }
 int
-mapi_dissect_struct_SyncUploadStateStreamContinue_req(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_, int hf_index _U_, guint32 param _U_)
+mapi_dissect_struct_SyncUploadStateStreamContinue_req(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
-	gboolean oldalign = di->no_align;
+	bool oldalign = di->no_align;
 	int old_offset= offset;
-	di->no_align = TRUE;
+	di->no_align = true;
 	if (parent_tree) {
 		item = proto_tree_add_item(parent_tree, hf_index, tvb, offset, -1, ENC_NA);
 		tree = proto_item_add_subtree(item, ett_mapi_SyncUploadStateStreamContinue_req);
@@ -8460,13 +8461,13 @@ mapi_dissect_struct_SyncUploadStateStreamContinue_req(tvbuff_t *tvb _U_, int off
 	return offset;
 }
 int
-mapi_dissect_struct_SyncImportMessageMove_req(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_, int hf_index _U_, guint32 param _U_)
+mapi_dissect_struct_SyncImportMessageMove_req(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
-	gboolean oldalign = di->no_align;
+	bool oldalign = di->no_align;
 	int old_offset = offset;
-	di->no_align = TRUE;
+	di->no_align = true;
 	if (parent_tree) {
 		item = proto_tree_add_item(parent_tree, hf_index, tvb, offset, -1, ENC_NA);
 		tree = proto_item_add_subtree(item, ett_mapi_SyncImportMessageMove_req);
@@ -8492,7 +8493,7 @@ mapi_dissect_struct_SyncImportMessageMove_req(tvbuff_t *tvb _U_, int offset _U_,
 /* IDL: 	USE_PER_MDB_REPLID_MAPPING =  0x010000000 , */
 /* IDL: } */
 int
-mapi_dissect_bitmap_OpenFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_, int hf_index _U_, guint32 param _U_)
+mapi_dissect_bitmap_OpenFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
 	proto_item *item= NULL;
 	static int * const mapi_OpenFlags_fields[] = {
@@ -8505,7 +8506,7 @@ mapi_dissect_bitmap_OpenFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pi
 		&hf_mapi_OpenFlags_USE_PER_MDB_REPLID_MAPPING,
 		NULL
 	};
-	guint32 flags;
+	uint32_t flags;
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
 				ett_mapi_OpenFlags, mapi_OpenFlags_fields, DREP_ENC_INTEGER(drep), BMT_NO_FALSE);
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, parent_tree, di, drep, -1, &flags);
@@ -8518,14 +8519,14 @@ mapi_dissect_bitmap_OpenFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pi
 	return offset;
 }
 int
-mapi_dissect_bitmap_StoreState(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_, int hf_index _U_, guint32 param _U_)
+mapi_dissect_bitmap_StoreState(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
 	proto_item *item;
 	static int * const mapi_StoreState_fields[] = {
 		&hf_mapi_StoreState_STORE_HAS_SEARCHES,
 		NULL
 	};
-	guint32 flags;
+	uint32_t flags;
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
 				ett_mapi_StoreState, mapi_StoreState_fields, DREP_ENC_INTEGER(drep), BMT_NO_FALSE);
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, parent_tree, di, drep, -1, &flags);
@@ -8538,14 +8539,14 @@ mapi_dissect_bitmap_StoreState(tvbuff_t *tvb _U_, int offset _U_, packet_info *p
 	return offset;
 }
 int
-mapi_dissect_struct_Logon_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_, int hf_index _U_, guint32 param _U_)
+mapi_dissect_struct_Logon_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
-	gboolean oldalign = di->no_align;
+	bool oldalign = di->no_align;
 	int old_offset= offset;
-	guint32 returnValue;
-	di->no_align = TRUE;
+	uint32_t returnValue;
+	di->no_align = true;
 	if (parent_tree) {
 		item = proto_tree_add_item(parent_tree, hf_index, tvb, offset, -1, ENC_NA);
 		tree = proto_item_add_subtree(item, ett_mapi_Logon_repl);
@@ -8554,7 +8555,7 @@ mapi_dissect_struct_Logon_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *p
 	offset = PIDL_dissect_uint32_val(tvb, offset, pinfo, tree, di, drep, hf_mapi_Logon_repl_ReturnValue, 0, &returnValue);
 	if (returnValue == 0x0){
 		// 2.2.3.1.2 RopLogon ROP Success Response Buffer
-		guint8 LogonFlags= 0;
+		uint8_t LogonFlags= 0;
 		offset = mapi_dissect_enum_LogonFlags(tvb, offset, pinfo, tree, di, drep, hf_mapi_Logon_repl_LogonFlags, &LogonFlags);
 		if (LogonFlags == 0x1){
 			// Private
@@ -8587,12 +8588,12 @@ mapi_dissect_struct_Logon_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *p
 	#define  RHEF_XorMagic     0x0002
 	#define  RHEF_Last         0x0004
 static
-int dissect_RPC_HEADER_EXT(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, dcerpc_info* di, guint8 *drep, int hf_index, tvbuff_t **ppUncomp_tvb)
+int dissect_RPC_HEADER_EXT(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, dcerpc_info* di, uint8_t *drep, int hf_index, tvbuff_t **ppUncomp_tvb)
 {
 	proto_tree *hTree = NULL;
 	proto_item *rpcItem = NULL;
-	guint16 flags;
-	guint16 compressedSize= 0, uncompressedSize= 0;
+	uint16_t flags;
+	uint16_t compressedSize= 0, uncompressedSize= 0;
 	int old_offset= offset;
 	ALIGN_TO_2_BYTES;
 	if (parent_tree) {
@@ -8652,7 +8653,7 @@ int dissect_RPC_HEADER_EXT(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_
 	return offset;
 }
 int
-mapi_dissect_struct_AuxInfo(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_, int hf_index _U_, guint32 param _U_)
+mapi_dissect_struct_AuxInfo(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
@@ -8685,7 +8686,7 @@ mapi_dissect_struct_AuxInfo(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinf
 	return offset;
 }
 static int
-mapi_dissect_RgbInOut(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, dcerpc_info* di, guint8 *drep, int hf_index)
+mapi_dissect_RgbInOut(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, dcerpc_info* di, uint8_t *drep, int hf_index)
 {
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
@@ -8706,11 +8707,11 @@ mapi_dissect_RgbInOut(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree 
 	add_new_data_source(pinfo, uncomp_tvb, di->ptype == PDU_REQ ? "Decrypted MAPI ROPIn PDU" : "Decrypted MAPI ROPOut PDU");
 	{
 		int uncompressed_offset= 0;
-		guint16 total_length;
+		uint16_t total_length;
 		item = proto_tree_add_item(tree, di->ptype == PDU_REQ ? hf_mapi_RgbIn_ropIn : hf_mapi_RgbOut_ropOut, uncomp_tvb, 0, tvb_reported_length(uncomp_tvb), ENC_NA);
 		tree = proto_item_add_subtree(item, di->ptype == PDU_REQ ? ett_mapi_RgbIn : ett_mapi_RgbOut);
 		uncompressed_offset = PIDL_dissect_uint16_val(uncomp_tvb, uncompressed_offset, pinfo, tree, di, drep, di->ptype == PDU_REQ ? hf_mapi_ROPInputBuffer_ropSize : hf_mapi_ROPOutputBuffer_ropSize, 0, &total_length);
-		while((guint)(uncompressed_offset) < total_length){
+		while((unsigned)(uncompressed_offset) < total_length){
 			if (di->ptype == PDU_REQ){
 				uncompressed_offset = mapi_dissect_struct_RopInput(uncomp_tvb, uncompressed_offset,pinfo,tree,di,drep,hf_mapi_ROPInputBuffer_rop,0);
 			} else {
@@ -8722,12 +8723,12 @@ mapi_dissect_RgbInOut(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree 
 	return offset;
 }
 int
-mapi_dissect_struct_RgbIn(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, dcerpc_info* di, guint8 *drep, int hf_index, guint32 param _U_)
+mapi_dissect_struct_RgbIn(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *parent_tree, dcerpc_info* di, uint8_t *drep, int hf_index, uint32_t param _U_)
 {
 	return mapi_dissect_RgbInOut(tvb, offset, pinfo, parent_tree, di, drep, hf_index);
 }
 static int
-dissect_EcDoRpcExt2_RgbOut(tvbuff_t *tvb _U_, int offset _U_, int length _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+dissect_EcDoRpcExt2_RgbOut(tvbuff_t *tvb _U_, int offset _U_, int length _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	if (length == 0){
 		return offset;
@@ -8735,12 +8736,12 @@ dissect_EcDoRpcExt2_RgbOut(tvbuff_t *tvb _U_, int offset _U_, int length _U_, pa
 	return mapi_dissect_struct_RgbOut(tvb, offset, pinfo, parent_tree, di, drep, hf_mapi_mapi_EcDoRpcExt2_rgbOut, 0);
 }
 static int
-mapi_dissect_element_EcDoRpcExt2_rgbOut_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+mapi_dissect_element_EcDoRpcExt2_rgbOut_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	return dissect_ndr_ucvarray_block(tvb, offset, pinfo, tree, di, drep, &dissect_EcDoRpcExt2_RgbOut);
 }
 static int
-dissect_EcDoRpcExt_RgbOut(tvbuff_t *tvb _U_, int offset _U_, int length _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+dissect_EcDoRpcExt_RgbOut(tvbuff_t *tvb _U_, int offset _U_, int length _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	if (length == 0){
 		return offset;
@@ -8748,12 +8749,12 @@ dissect_EcDoRpcExt_RgbOut(tvbuff_t *tvb _U_, int offset _U_, int length _U_, pac
 	return mapi_dissect_struct_RgbOut(tvb, offset, pinfo, parent_tree, di, drep, hf_mapi_mapi_EcDoRpcExt_rgbOut, 0);
 }
 static int
-mapi_dissect_element_EcDoRpcExt_rgbOut_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, guint8 *drep _U_)
+mapi_dissect_element_EcDoRpcExt_rgbOut_(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
 	return dissect_ndr_ucvarray_block(tvb, offset, pinfo, tree, di, drep, &dissect_EcDoRpcExt_RgbOut);
 }
 int
-mapi_dissect_struct_RgbOut(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, guint8 *drep _U_, int hf_index _U_, guint32 param _U_)
+mapi_dissect_struct_RgbOut(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
 	return mapi_dissect_RgbInOut(tvb, offset, pinfo, parent_tree, di, drep, hf_index);
 }
@@ -8834,9 +8835,9 @@ mapi_dissect_struct_RgbOut(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo
 /* IDL: } */
 
 int
-mapi_dissect_enum_MAPISTATUS(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint32 *param _U_)
+mapi_dissect_enum_MAPISTATUS(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t *param _U_)
 {
-	guint32 parameter=0;
+	uint32_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -12245,9 +12246,9 @@ mapi_dissect_enum_MAPISTATUS(tvbuff_t *tvb _U_, int offset _U_, packet_info *pin
 /* IDL: } */
 
 int
-mapi_dissect_enum_MAPITAGS(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint32 *param _U_)
+mapi_dissect_enum_MAPITAGS(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t *param _U_)
 {
-	guint32 parameter=0;
+	uint32_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -12336,9 +12337,9 @@ mapi_dissect_struct_DATA_BLOB(tvbuff_t *tvb _U_, int offset _U_, packet_info *pi
 /* IDL: } */
 
 int
-mapi_dissect_enum_MAPI_OBJTYPE(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_MAPI_OBJTYPE(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -12374,9 +12375,9 @@ mapi_dissect_enum_MAPI_OBJTYPE(tvbuff_t *tvb _U_, int offset _U_, packet_info *p
 /* IDL: } */
 
 int
-mapi_dissect_enum_ACLRIGHTS(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint32 *param _U_)
+mapi_dissect_enum_ACLRIGHTS(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t *param _U_)
 {
-	guint32 parameter=0;
+	uint32_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -12563,9 +12564,9 @@ mapi_dissect_enum_ACLRIGHTS(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinf
 /* IDL: } */
 
 int
-mapi_dissect_enum_ROP_OPNUM(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_ROP_OPNUM(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -13194,9 +13195,9 @@ mapi_dissect_struct_SPropValue_array_wrap(tvbuff_t *tvb _U_, int offset _U_, pac
 /* IDL: } */
 
 int
-mapi_dissect_enum_ActionType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_ActionType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -13393,9 +13394,9 @@ mapi_dissect_struct_RecipientBlock(tvbuff_t *tvb _U_, int offset _U_, packet_inf
 /* IDL: } */
 
 int
-mapi_dissect_enum_BounceCode(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint1632 *param _U_)
+mapi_dissect_enum_BounceCode(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t *param _U_)
 {
-	guint1632 parameter=0;
+	uint32_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -13559,7 +13560,7 @@ mapi_dissect_ActionData(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -13623,7 +13624,7 @@ mapi_dissect_ActionData(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U
 /* IDL: } */
 
 static int
-mapi_dissect_element_ActionBlockData_ActionType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ActionType)
+mapi_dissect_element_ActionBlockData_ActionType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ActionType)
 {
 	offset = mapi_dissect_enum_ActionType(tvb, offset, pinfo, tree, di, drep, hf_mapi_ActionBlockData_ActionType, ActionType);
 
@@ -13647,7 +13648,7 @@ mapi_dissect_element_ActionBlockData_ActionFlags(tvbuff_t *tvb _U_, int offset _
 }
 
 static int
-mapi_dissect_element_ActionBlockData_ActionDataBuffer(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ActionType)
+mapi_dissect_element_ActionBlockData_ActionDataBuffer(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ActionType)
 {
 	offset = mapi_dissect_ActionData(tvb, offset, pinfo, tree, di, drep, hf_mapi_ActionBlockData_ActionDataBuffer, *ActionType);
 
@@ -13657,7 +13658,7 @@ mapi_dissect_element_ActionBlockData_ActionDataBuffer(tvbuff_t *tvb _U_, int off
 int
 mapi_dissect_struct_ActionBlockData(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 ActionType = 0;
+	uint8_t ActionType = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -14382,7 +14383,7 @@ mapi_dissect_SPropValue_CTR(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinf
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level;
+	uint32_t level;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -14670,9 +14671,9 @@ mapi_dissect_struct_SPropTagArray(tvbuff_t *tvb _U_, int offset _U_, packet_info
 /* IDL: } */
 
 int
-mapi_dissect_enum_ulRowFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_ulRowFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -14770,9 +14771,9 @@ mapi_dissect_struct_Release_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info 
 /* IDL: } */
 
 int
-mapi_dissect_enum_OpenFolder_OpenModeFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_OpenFolder_OpenModeFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -14959,7 +14960,7 @@ mapi_dissect_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -14995,7 +14996,7 @@ mapi_dissect_element_OpenFolder_Success_HasRules(tvbuff_t *tvb _U_, int offset _
 }
 
 static int
-mapi_dissect_element_OpenFolder_Success_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted)
+mapi_dissect_element_OpenFolder_Success_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_OpenFolder_Success_IsGhosted, *IsGhosted);
 
@@ -15003,7 +15004,7 @@ mapi_dissect_element_OpenFolder_Success_IsGhosted(tvbuff_t *tvb _U_, int offset 
 }
 
 static int
-mapi_dissect_element_OpenFolder_Success_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted)
+mapi_dissect_element_OpenFolder_Success_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted)
 {
 	offset = mapi_dissect_IsGhosted(tvb, offset, pinfo, tree, di, drep, hf_mapi_OpenFolder_Success_Ghost, *IsGhosted);
 
@@ -15013,7 +15014,7 @@ mapi_dissect_element_OpenFolder_Success_Ghost(tvbuff_t *tvb _U_, int offset _U_,
 int
 mapi_dissect_struct_OpenFolder_Success(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 IsGhosted = 0;
+	uint8_t IsGhosted = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -15063,7 +15064,7 @@ mapi_dissect_OpenFolder_repl_status(tvbuff_t *tvb _U_, int offset _U_, packet_in
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -15099,7 +15100,7 @@ mapi_dissect_element_OpenFolder_repl_OutputHandleIndex(tvbuff_t *tvb _U_, int of
 }
 
 static int
-mapi_dissect_element_OpenFolder_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_OpenFolder_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = PIDL_dissect_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_OpenFolder_repl_ReturnValue, *ReturnValue);
 
@@ -15107,7 +15108,7 @@ mapi_dissect_element_OpenFolder_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _
 }
 
 static int
-mapi_dissect_element_OpenFolder_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_OpenFolder_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = mapi_dissect_OpenFolder_repl_status(tvb, offset, pinfo, tree, di, drep, hf_mapi_OpenFolder_repl_repl, *ReturnValue);
 
@@ -15117,7 +15118,7 @@ mapi_dissect_element_OpenFolder_repl_repl(tvbuff_t *tvb _U_, int offset _U_, pac
 int
 mapi_dissect_struct_OpenFolder_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint32 ReturnValue = 0;
+	uint32_t ReturnValue = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -15157,9 +15158,9 @@ mapi_dissect_struct_OpenFolder_repl(tvbuff_t *tvb _U_, int offset _U_, packet_in
 /* IDL: } */
 
 int
-mapi_dissect_enum_StringType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_StringType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -15209,7 +15210,7 @@ mapi_dissect_String(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, p
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -15247,7 +15248,7 @@ mapi_dissect_String(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, p
 /* IDL: } */
 
 static int
-mapi_dissect_element_TypedString_StringType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *StringType)
+mapi_dissect_element_TypedString_StringType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *StringType)
 {
 	offset = mapi_dissect_enum_StringType(tvb, offset, pinfo, tree, di, drep, hf_mapi_TypedString_StringType, StringType);
 
@@ -15255,7 +15256,7 @@ mapi_dissect_element_TypedString_StringType(tvbuff_t *tvb _U_, int offset _U_, p
 }
 
 static int
-mapi_dissect_element_TypedString_String(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *StringType)
+mapi_dissect_element_TypedString_String(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *StringType)
 {
 	offset = mapi_dissect_String(tvb, offset, pinfo, tree, di, drep, hf_mapi_TypedString_String, *StringType);
 
@@ -15265,7 +15266,7 @@ mapi_dissect_element_TypedString_String(tvbuff_t *tvb _U_, int offset _U_, packe
 int
 mapi_dissect_struct_TypedString(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 StringType = 0;
+	uint8_t StringType = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -15302,9 +15303,9 @@ mapi_dissect_struct_TypedString(tvbuff_t *tvb _U_, int offset _U_, packet_info *
 /* IDL: } */
 
 int
-mapi_dissect_enum_OpenMessage_OpenModeFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_OpenMessage_OpenModeFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -15433,9 +15434,9 @@ mapi_dissect_struct_OpenMessage_req(tvbuff_t *tvb _U_, int offset _U_, packet_in
 /* IDL: } */
 
 int
-mapi_dissect_enum_CODEPAGEID(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint16 *param _U_)
+mapi_dissect_enum_CODEPAGEID(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint16_t *param _U_)
 {
-	guint16 parameter=0;
+	uint16_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -15455,9 +15456,9 @@ mapi_dissect_enum_CODEPAGEID(tvbuff_t *tvb _U_, int offset _U_, packet_info *pin
 /* IDL: } */
 
 int
-mapi_dissect_enum_ulRecipClass(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_ulRecipClass(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -15475,9 +15476,9 @@ mapi_dissect_enum_ulRecipClass(tvbuff_t *tvb _U_, int offset _U_, packet_info *p
 /* IDL: } */
 
 int
-mapi_dissect_enum_addr_type(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_addr_type(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -15608,7 +15609,7 @@ mapi_dissect_recipient_type(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinf
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -15662,7 +15663,7 @@ mapi_dissect_recipient_SimpleDisplayName(tvbuff_t *tvb _U_, int offset _U_, pack
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -15721,7 +15722,7 @@ mapi_dissect_recipient_TransmittableDisplayName(tvbuff_t *tvb _U_, int offset _U
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -15784,7 +15785,7 @@ mapi_dissect_recipient_DisplayName(tvbuff_t *tvb _U_, int offset _U_, packet_inf
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -15841,7 +15842,7 @@ mapi_dissect_recipient_EmailAddress(tvbuff_t *tvb _U_, int offset _U_, packet_in
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -16217,7 +16218,7 @@ mapi_dissect_OpenMessage_repl_status(tvbuff_t *tvb _U_, int offset _U_, packet_i
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -16253,7 +16254,7 @@ mapi_dissect_element_OpenMessage_repl_OutputHandleIndex(tvbuff_t *tvb _U_, int o
 }
 
 static int
-mapi_dissect_element_OpenMessage_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_OpenMessage_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = PIDL_dissect_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_OpenMessage_repl_ReturnValue, *ReturnValue);
 
@@ -16261,7 +16262,7 @@ mapi_dissect_element_OpenMessage_repl_ReturnValue(tvbuff_t *tvb _U_, int offset 
 }
 
 static int
-mapi_dissect_element_OpenMessage_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_OpenMessage_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = mapi_dissect_OpenMessage_repl_status(tvb, offset, pinfo, tree, di, drep, hf_mapi_OpenMessage_repl_repl, *ReturnValue);
 
@@ -16271,7 +16272,7 @@ mapi_dissect_element_OpenMessage_repl_repl(tvbuff_t *tvb _U_, int offset _U_, pa
 int
 mapi_dissect_struct_OpenMessage_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint32 ReturnValue = 0;
+	uint32_t ReturnValue = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -16324,7 +16325,7 @@ mapi_dissect_bitmap_TableFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *p
 		&hf_mapi_TableFlags_TableFlags_SuppressNotifications,
 		NULL
 	};
-	guint8 flags;
+	uint8_t flags;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
 				ett_mapi_TableFlags, mapi_TableFlags_fields, DREP_ENC_INTEGER(drep), BMT_NO_FALSE);
@@ -16477,7 +16478,7 @@ mapi_dissect_GetHierarchyTable_repl_status(tvbuff_t *tvb _U_, int offset _U_, pa
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -16513,7 +16514,7 @@ mapi_dissect_element_GetHierarchyTable_repl_OutputHandleIndex(tvbuff_t *tvb _U_,
 }
 
 static int
-mapi_dissect_element_GetHierarchyTable_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_GetHierarchyTable_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = PIDL_dissect_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_GetHierarchyTable_repl_ReturnValue, *ReturnValue);
 
@@ -16521,7 +16522,7 @@ mapi_dissect_element_GetHierarchyTable_repl_ReturnValue(tvbuff_t *tvb _U_, int o
 }
 
 static int
-mapi_dissect_element_GetHierarchyTable_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_GetHierarchyTable_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = mapi_dissect_GetHierarchyTable_repl_status(tvb, offset, pinfo, tree, di, drep, hf_mapi_GetHierarchyTable_repl_repl, *ReturnValue);
 
@@ -16531,7 +16532,7 @@ mapi_dissect_element_GetHierarchyTable_repl_repl(tvbuff_t *tvb _U_, int offset _
 int
 mapi_dissect_struct_GetHierarchyTable_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint32 ReturnValue = 0;
+	uint32_t ReturnValue = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -16696,7 +16697,7 @@ mapi_dissect_GetContentsTable_repl_status(tvbuff_t *tvb _U_, int offset _U_, pac
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -16732,7 +16733,7 @@ mapi_dissect_element_GetContentsTable_repl_OutputHandleIndex(tvbuff_t *tvb _U_, 
 }
 
 static int
-mapi_dissect_element_GetContentsTable_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_GetContentsTable_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = PIDL_dissect_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_GetContentsTable_repl_ReturnValue, *ReturnValue);
 
@@ -16740,7 +16741,7 @@ mapi_dissect_element_GetContentsTable_repl_ReturnValue(tvbuff_t *tvb _U_, int of
 }
 
 static int
-mapi_dissect_element_GetContentsTable_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_GetContentsTable_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = mapi_dissect_GetContentsTable_repl_status(tvb, offset, pinfo, tree, di, drep, hf_mapi_GetContentsTable_repl_repl, *ReturnValue);
 
@@ -16750,7 +16751,7 @@ mapi_dissect_element_GetContentsTable_repl_repl(tvbuff_t *tvb _U_, int offset _U
 int
 mapi_dissect_struct_GetContentsTable_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint32 ReturnValue = 0;
+	uint32_t ReturnValue = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -16896,7 +16897,7 @@ mapi_dissect_CreateMessage_MessageId(tvbuff_t *tvb _U_, int offset _U_, packet_i
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -16923,7 +16924,7 @@ mapi_dissect_CreateMessage_MessageId(tvbuff_t *tvb _U_, int offset _U_, packet_i
 /* IDL: } */
 
 static int
-mapi_dissect_element_CreateMessage_repl_success_HasMessageId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *HasMessageId)
+mapi_dissect_element_CreateMessage_repl_success_HasMessageId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *HasMessageId)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_CreateMessage_repl_success_HasMessageId, *HasMessageId);
 
@@ -16931,7 +16932,7 @@ mapi_dissect_element_CreateMessage_repl_success_HasMessageId(tvbuff_t *tvb _U_, 
 }
 
 static int
-mapi_dissect_element_CreateMessage_repl_success_MessageId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *HasMessageId)
+mapi_dissect_element_CreateMessage_repl_success_MessageId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *HasMessageId)
 {
 	offset = mapi_dissect_CreateMessage_MessageId(tvb, offset, pinfo, tree, di, drep, hf_mapi_CreateMessage_repl_success_MessageId, *HasMessageId);
 
@@ -16941,7 +16942,7 @@ mapi_dissect_element_CreateMessage_repl_success_MessageId(tvbuff_t *tvb _U_, int
 int
 mapi_dissect_struct_CreateMessage_repl_success(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 HasMessageId = 0;
+	uint8_t HasMessageId = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -16989,7 +16990,7 @@ mapi_dissect_CreateMessage_repl_status(tvbuff_t *tvb _U_, int offset _U_, packet
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -17025,7 +17026,7 @@ mapi_dissect_element_CreateMessage_repl_OutputHandleIndex(tvbuff_t *tvb _U_, int
 }
 
 static int
-mapi_dissect_element_CreateMessage_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_CreateMessage_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = PIDL_dissect_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_CreateMessage_repl_ReturnValue, *ReturnValue);
 
@@ -17033,7 +17034,7 @@ mapi_dissect_element_CreateMessage_repl_ReturnValue(tvbuff_t *tvb _U_, int offse
 }
 
 static int
-mapi_dissect_element_CreateMessage_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_CreateMessage_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = mapi_dissect_CreateMessage_repl_status(tvb, offset, pinfo, tree, di, drep, hf_mapi_CreateMessage_repl_repl, *ReturnValue);
 
@@ -17043,7 +17044,7 @@ mapi_dissect_element_CreateMessage_repl_repl(tvbuff_t *tvb _U_, int offset _U_, 
 int
 mapi_dissect_struct_CreateMessage_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint32 ReturnValue = 0;
+	uint32_t ReturnValue = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -17249,7 +17250,7 @@ mapi_dissect_GetProps_repl_status(tvbuff_t *tvb _U_, int offset _U_, packet_info
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -17285,7 +17286,7 @@ mapi_dissect_element_GetProps_repl_InputHandleIndex(tvbuff_t *tvb _U_, int offse
 }
 
 static int
-mapi_dissect_element_GetProps_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_GetProps_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = PIDL_dissect_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_GetProps_repl_ReturnValue, *ReturnValue);
 
@@ -17293,7 +17294,7 @@ mapi_dissect_element_GetProps_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_
 }
 
 static int
-mapi_dissect_element_GetProps_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_GetProps_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = mapi_dissect_GetProps_repl_status(tvb, offset, pinfo, tree, di, drep, hf_mapi_GetProps_repl_repl, *ReturnValue);
 
@@ -17303,7 +17304,7 @@ mapi_dissect_element_GetProps_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packe
 int
 mapi_dissect_struct_GetProps_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint32 ReturnValue = 0;
+	uint32_t ReturnValue = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -17468,7 +17469,7 @@ mapi_dissect_GetPropsAll_repl_status(tvbuff_t *tvb _U_, int offset _U_, packet_i
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -17504,7 +17505,7 @@ mapi_dissect_element_GetPropsAll_repl_InputHandleIndex(tvbuff_t *tvb _U_, int of
 }
 
 static int
-mapi_dissect_element_GetPropsAll_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_GetPropsAll_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = PIDL_dissect_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_GetPropsAll_repl_ReturnValue, *ReturnValue);
 
@@ -17512,7 +17513,7 @@ mapi_dissect_element_GetPropsAll_repl_ReturnValue(tvbuff_t *tvb _U_, int offset 
 }
 
 static int
-mapi_dissect_element_GetPropsAll_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_GetPropsAll_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = mapi_dissect_GetPropsAll_repl_status(tvb, offset, pinfo, tree, di, drep, hf_mapi_GetPropsAll_repl_repl, *ReturnValue);
 
@@ -17522,7 +17523,7 @@ mapi_dissect_element_GetPropsAll_repl_repl(tvbuff_t *tvb _U_, int offset _U_, pa
 int
 mapi_dissect_struct_GetPropsAll_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint32 ReturnValue = 0;
+	uint32_t ReturnValue = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -18000,9 +18001,9 @@ mapi_dissect_struct_DeleteProps_repl(tvbuff_t *tvb _U_, int offset _U_, packet_i
 /* IDL: } */
 
 int
-mapi_dissect_enum_SaveFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_SaveFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -18240,9 +18241,9 @@ mapi_dissect_struct_RemoveAllRecipients_repl(tvbuff_t *tvb _U_, int offset _U_, 
 /* IDL: } */
 
 int
-mapi_dissect_enum_modrecip(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_modrecip(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -18950,7 +18951,7 @@ mapi_dissect_bitmap_MSGFLAG_READ(tvbuff_t *tvb _U_, int offset _U_, packet_info 
 		&hf_mapi_MSGFLAG_READ_CLEAR_NRN_PENDING,
 		NULL
 	};
-	guint8 flags;
+	uint8_t flags;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
 				ett_mapi_MSGFLAG_READ, mapi_MSGFLAG_READ_fields, DREP_ENC_INTEGER(drep), BMT_NO_FALSE);
@@ -19073,7 +19074,7 @@ mapi_dissect_SetMessageReadFlag_LogonId(tvbuff_t *tvb _U_, int offset _U_, packe
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -19123,7 +19124,7 @@ mapi_dissect_SetMessageReadFlag_ClientData(tvbuff_t *tvb _U_, int offset _U_, pa
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -19151,7 +19152,7 @@ mapi_dissect_SetMessageReadFlag_ClientData(tvbuff_t *tvb _U_, int offset _U_, pa
 /* IDL: } */
 
 static int
-mapi_dissect_element_SetMessageReadFlag_repl_ReadStatusChanged(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ReadStatusChanged)
+mapi_dissect_element_SetMessageReadFlag_repl_ReadStatusChanged(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ReadStatusChanged)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_SetMessageReadFlag_repl_ReadStatusChanged, *ReadStatusChanged);
 
@@ -19159,7 +19160,7 @@ mapi_dissect_element_SetMessageReadFlag_repl_ReadStatusChanged(tvbuff_t *tvb _U_
 }
 
 static int
-mapi_dissect_element_SetMessageReadFlag_repl_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ReadStatusChanged)
+mapi_dissect_element_SetMessageReadFlag_repl_LogonId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ReadStatusChanged)
 {
 	offset = mapi_dissect_SetMessageReadFlag_LogonId(tvb, offset, pinfo, tree, di, drep, hf_mapi_SetMessageReadFlag_repl_LogonId, *ReadStatusChanged);
 
@@ -19167,7 +19168,7 @@ mapi_dissect_element_SetMessageReadFlag_repl_LogonId(tvbuff_t *tvb _U_, int offs
 }
 
 static int
-mapi_dissect_element_SetMessageReadFlag_repl_ClientData(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ReadStatusChanged)
+mapi_dissect_element_SetMessageReadFlag_repl_ClientData(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ReadStatusChanged)
 {
 	offset = mapi_dissect_SetMessageReadFlag_ClientData(tvb, offset, pinfo, tree, di, drep, hf_mapi_SetMessageReadFlag_repl_ClientData, *ReadStatusChanged);
 
@@ -19177,7 +19178,7 @@ mapi_dissect_element_SetMessageReadFlag_repl_ClientData(tvbuff_t *tvb _U_, int o
 int
 mapi_dissect_struct_SetMessageReadFlag_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 ReadStatusChanged = 0;
+	uint8_t ReadStatusChanged = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -19214,9 +19215,9 @@ mapi_dissect_struct_SetMessageReadFlag_repl(tvbuff_t *tvb _U_, int offset _U_, p
 /* IDL: } */
 
 int
-mapi_dissect_enum_SetColumnsFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_SetColumnsFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -19239,9 +19240,9 @@ mapi_dissect_enum_SetColumnsFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info
 /* IDL: } */
 
 int
-mapi_dissect_enum_TableStatus(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_TableStatus(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -19393,9 +19394,9 @@ mapi_dissect_struct_SetColumns_repl(tvbuff_t *tvb _U_, int offset _U_, packet_in
 /* IDL: } */
 
 int
-mapi_dissect_enum_TBL_FLAGS(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_TBL_FLAGS(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -19414,9 +19415,9 @@ mapi_dissect_enum_TBL_FLAGS(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinf
 /* IDL: } */
 
 int
-mapi_dissect_enum_TABLE_SORT(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_TABLE_SORT(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -19859,7 +19860,7 @@ mapi_dissect_bitmap_fuzzyLevel(tvbuff_t *tvb _U_, int offset _U_, packet_info *p
 		&hf_mapi_fuzzyLevel_FL_LOOSE,
 		NULL
 	};
-	guint32 flags;
+	uint32_t flags;
 	ALIGN_TO_4_BYTES;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
@@ -19948,9 +19949,9 @@ mapi_dissect_struct_SContentRestriction(tvbuff_t *tvb _U_, int offset _U_, packe
 /* IDL: } */
 
 int
-mapi_dissect_enum_relMBR(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_relMBR(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -20036,9 +20037,9 @@ mapi_dissect_struct_SBitmaskRestriction(tvbuff_t *tvb _U_, int offset _U_, packe
 /* IDL: } */
 
 int
-mapi_dissect_enum_CompareRelop(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_CompareRelop(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -20367,7 +20368,7 @@ mapi_dissect_RestrictionVariable(tvbuff_t *tvb _U_, int offset _U_, packet_info 
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -20420,7 +20421,7 @@ mapi_dissect_element_SCommentRestriction_TaggedValues_(tvbuff_t *tvb _U_, int of
 }
 
 static int
-mapi_dissect_element_SCommentRestriction_RestrictionPresent(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *RestrictionPresent)
+mapi_dissect_element_SCommentRestriction_RestrictionPresent(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *RestrictionPresent)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_mapi_SCommentRestriction_RestrictionPresent, *RestrictionPresent);
 
@@ -20428,7 +20429,7 @@ mapi_dissect_element_SCommentRestriction_RestrictionPresent(tvbuff_t *tvb _U_, i
 }
 
 static int
-mapi_dissect_element_SCommentRestriction_Restriction(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *RestrictionPresent)
+mapi_dissect_element_SCommentRestriction_Restriction(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *RestrictionPresent)
 {
 	offset = mapi_dissect_RestrictionVariable(tvb, offset, pinfo, tree, di, drep, hf_mapi_mapi_SCommentRestriction_Restriction, *RestrictionPresent);
 
@@ -20438,7 +20439,7 @@ mapi_dissect_element_SCommentRestriction_Restriction(tvbuff_t *tvb _U_, int offs
 int
 mapi_dissect_struct_SCommentRestriction(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 RestrictionPresent = 0;
+	uint8_t RestrictionPresent = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -20580,7 +20581,7 @@ mapi_dissect_SRestriction_CTR(tvbuff_t *tvb _U_, int offset _U_, packet_info *pi
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -20647,7 +20648,7 @@ mapi_dissect_SRestriction_CTR(tvbuff_t *tvb _U_, int offset _U_, packet_info *pi
 /* IDL: } */
 
 static int
-mapi_dissect_element_SRestriction_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt)
+mapi_dissect_element_SRestriction_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_mapi_SRestriction_rt, *rt);
 
@@ -20655,7 +20656,7 @@ mapi_dissect_element_SRestriction_rt(tvbuff_t *tvb _U_, int offset _U_, packet_i
 }
 
 static int
-mapi_dissect_element_SRestriction_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt)
+mapi_dissect_element_SRestriction_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt)
 {
 	offset = mapi_dissect_SRestriction_CTR(tvb, offset, pinfo, tree, di, drep, hf_mapi_mapi_SRestriction_res, *rt);
 
@@ -20665,7 +20666,7 @@ mapi_dissect_element_SRestriction_res(tvbuff_t *tvb _U_, int offset _U_, packet_
 int
 mapi_dissect_struct_SRestriction(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 rt = 0;
+	uint8_t rt = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -20700,7 +20701,7 @@ mapi_dissect_struct_SRestriction(tvbuff_t *tvb _U_, int offset _U_, packet_info 
 /* IDL: } */
 
 static int
-mapi_dissect_element_SRestriction_and_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt)
+mapi_dissect_element_SRestriction_and_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_SRestriction_and_rt, *rt);
 
@@ -20708,7 +20709,7 @@ mapi_dissect_element_SRestriction_and_rt(tvbuff_t *tvb _U_, int offset _U_, pack
 }
 
 static int
-mapi_dissect_element_SRestriction_and_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt)
+mapi_dissect_element_SRestriction_and_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt)
 {
 	offset = mapi_dissect_SRestriction_CTR(tvb, offset, pinfo, tree, di, drep, hf_mapi_SRestriction_and_res, *rt);
 
@@ -20718,7 +20719,7 @@ mapi_dissect_element_SRestriction_and_res(tvbuff_t *tvb _U_, int offset _U_, pac
 int
 mapi_dissect_struct_SRestriction_and(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 rt = 0;
+	uint8_t rt = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -20753,7 +20754,7 @@ mapi_dissect_struct_SRestriction_and(tvbuff_t *tvb _U_, int offset _U_, packet_i
 /* IDL: } */
 
 static int
-mapi_dissect_element_SRestriction_or_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt)
+mapi_dissect_element_SRestriction_or_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_SRestriction_or_rt, *rt);
 
@@ -20761,7 +20762,7 @@ mapi_dissect_element_SRestriction_or_rt(tvbuff_t *tvb _U_, int offset _U_, packe
 }
 
 static int
-mapi_dissect_element_SRestriction_or_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt)
+mapi_dissect_element_SRestriction_or_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt)
 {
 	offset = mapi_dissect_SRestriction_CTR(tvb, offset, pinfo, tree, di, drep, hf_mapi_SRestriction_or_res, *rt);
 
@@ -20771,7 +20772,7 @@ mapi_dissect_element_SRestriction_or_res(tvbuff_t *tvb _U_, int offset _U_, pack
 int
 mapi_dissect_struct_SRestriction_or(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 rt = 0;
+	uint8_t rt = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -20806,7 +20807,7 @@ mapi_dissect_struct_SRestriction_or(tvbuff_t *tvb _U_, int offset _U_, packet_in
 /* IDL: } */
 
 static int
-mapi_dissect_element_SRestriction_sub_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt)
+mapi_dissect_element_SRestriction_sub_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_SRestriction_sub_rt, *rt);
 
@@ -20814,7 +20815,7 @@ mapi_dissect_element_SRestriction_sub_rt(tvbuff_t *tvb _U_, int offset _U_, pack
 }
 
 static int
-mapi_dissect_element_SRestriction_sub_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt)
+mapi_dissect_element_SRestriction_sub_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt)
 {
 	offset = mapi_dissect_SRestriction_CTR(tvb, offset, pinfo, tree, di, drep, hf_mapi_SRestriction_sub_res, *rt);
 
@@ -20824,7 +20825,7 @@ mapi_dissect_element_SRestriction_sub_res(tvbuff_t *tvb _U_, int offset _U_, pac
 int
 mapi_dissect_struct_SRestriction_sub(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 rt = 0;
+	uint8_t rt = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -20859,7 +20860,7 @@ mapi_dissect_struct_SRestriction_sub(tvbuff_t *tvb _U_, int offset _U_, packet_i
 /* IDL: } */
 
 static int
-mapi_dissect_element_SRestriction_comment_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt)
+mapi_dissect_element_SRestriction_comment_rt(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_SRestriction_comment_rt, *rt);
 
@@ -20867,7 +20868,7 @@ mapi_dissect_element_SRestriction_comment_rt(tvbuff_t *tvb _U_, int offset _U_, 
 }
 
 static int
-mapi_dissect_element_SRestriction_comment_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *rt)
+mapi_dissect_element_SRestriction_comment_res(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *rt)
 {
 	offset = mapi_dissect_SRestriction_CTR(tvb, offset, pinfo, tree, di, drep, hf_mapi_SRestriction_comment_res, *rt);
 
@@ -20877,7 +20878,7 @@ mapi_dissect_element_SRestriction_comment_res(tvbuff_t *tvb _U_, int offset _U_,
 int
 mapi_dissect_struct_SRestriction_comment(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 rt = 0;
+	uint8_t rt = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -21006,9 +21007,9 @@ mapi_dissect_struct_Restrict_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info
 /* IDL: } */
 
 int
-mapi_dissect_enum_QueryRowsFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_QueryRowsFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -21373,9 +21374,9 @@ mapi_dissect_struct_QueryPosition_repl(tvbuff_t *tvb _U_, int offset _U_, packet
 /* IDL: } */
 
 int
-mapi_dissect_enum_BOOKMARK(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_BOOKMARK(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -21873,9 +21874,9 @@ mapi_dissect_struct_CreateBookmark_repl(tvbuff_t *tvb _U_, int offset _U_, packe
 /* IDL: } */
 
 int
-mapi_dissect_enum_FOLDER_TYPE(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_FOLDER_TYPE(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -21893,9 +21894,9 @@ mapi_dissect_enum_FOLDER_TYPE(tvbuff_t *tvb _U_, int offset _U_, packet_info *pi
 /* IDL: } */
 
 int
-mapi_dissect_enum_FOLDER_STRING(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_FOLDER_STRING(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -21934,7 +21935,7 @@ mapi_dissect_LPTSTR(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, p
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -21962,9 +21963,9 @@ mapi_dissect_LPTSTR(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, p
 /* IDL: } */
 
 int
-mapi_dissect_enum_FOLDER_FLAGS(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint16 *param _U_)
+mapi_dissect_enum_FOLDER_FLAGS(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint16_t *param _U_)
 {
-	guint16 parameter=0;
+	uint16_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -22020,7 +22021,7 @@ mapi_dissect_element_CreateFolder_req_ulFolderType(tvbuff_t *tvb _U_, int offset
 }
 
 static int
-mapi_dissect_element_CreateFolder_req_ulType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ulType)
+mapi_dissect_element_CreateFolder_req_ulType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ulType)
 {
 	offset = mapi_dissect_enum_FOLDER_STRING(tvb, offset, pinfo, tree, di, drep, hf_mapi_CreateFolder_req_ulType, ulType);
 
@@ -22036,7 +22037,7 @@ mapi_dissect_element_CreateFolder_req_ulFlags(tvbuff_t *tvb _U_, int offset _U_,
 }
 
 static int
-mapi_dissect_element_CreateFolder_req_FolderName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ulType)
+mapi_dissect_element_CreateFolder_req_FolderName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ulType)
 {
 	offset = mapi_dissect_LPTSTR(tvb, offset, pinfo, tree, di, drep, hf_mapi_CreateFolder_req_FolderName, *ulType);
 
@@ -22044,7 +22045,7 @@ mapi_dissect_element_CreateFolder_req_FolderName(tvbuff_t *tvb _U_, int offset _
 }
 
 static int
-mapi_dissect_element_CreateFolder_req_FolderComment(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ulType)
+mapi_dissect_element_CreateFolder_req_FolderComment(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ulType)
 {
 	offset = mapi_dissect_LPTSTR(tvb, offset, pinfo, tree, di, drep, hf_mapi_CreateFolder_req_FolderComment, *ulType);
 
@@ -22054,7 +22055,7 @@ mapi_dissect_element_CreateFolder_req_FolderComment(tvbuff_t *tvb _U_, int offse
 int
 mapi_dissect_struct_CreateFolder_req(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 ulType = 0;
+	uint8_t ulType = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -22110,7 +22111,7 @@ mapi_dissect_element_CreateFolder_GhostInfo_HasRules(tvbuff_t *tvb _U_, int offs
 }
 
 static int
-mapi_dissect_element_CreateFolder_GhostInfo_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted)
+mapi_dissect_element_CreateFolder_GhostInfo_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_CreateFolder_GhostInfo_IsGhosted, *IsGhosted);
 
@@ -22118,7 +22119,7 @@ mapi_dissect_element_CreateFolder_GhostInfo_IsGhosted(tvbuff_t *tvb _U_, int off
 }
 
 static int
-mapi_dissect_element_CreateFolder_GhostInfo_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted)
+mapi_dissect_element_CreateFolder_GhostInfo_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted)
 {
 	offset = mapi_dissect_IsGhosted(tvb, offset, pinfo, tree, di, drep, hf_mapi_CreateFolder_GhostInfo_Ghost, *IsGhosted);
 
@@ -22128,7 +22129,7 @@ mapi_dissect_element_CreateFolder_GhostInfo_Ghost(tvbuff_t *tvb _U_, int offset 
 int
 mapi_dissect_struct_CreateFolder_GhostInfo(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 IsGhosted = 0;
+	uint8_t IsGhosted = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -22178,7 +22179,7 @@ mapi_dissect_CreateFolder_GhostUnion(tvbuff_t *tvb _U_, int offset _U_, packet_i
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -22214,7 +22215,7 @@ mapi_dissect_element_CreateFolder_repl_folder_id(tvbuff_t *tvb _U_, int offset _
 }
 
 static int
-mapi_dissect_element_CreateFolder_repl_IsExistingFolder(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsExistingFolder)
+mapi_dissect_element_CreateFolder_repl_IsExistingFolder(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsExistingFolder)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_CreateFolder_repl_IsExistingFolder, *IsExistingFolder);
 
@@ -22222,7 +22223,7 @@ mapi_dissect_element_CreateFolder_repl_IsExistingFolder(tvbuff_t *tvb _U_, int o
 }
 
 static int
-mapi_dissect_element_CreateFolder_repl_GhostUnion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsExistingFolder)
+mapi_dissect_element_CreateFolder_repl_GhostUnion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsExistingFolder)
 {
 	offset = mapi_dissect_CreateFolder_GhostUnion(tvb, offset, pinfo, tree, di, drep, hf_mapi_CreateFolder_repl_GhostUnion, *IsExistingFolder);
 
@@ -22232,7 +22233,7 @@ mapi_dissect_element_CreateFolder_repl_GhostUnion(tvbuff_t *tvb _U_, int offset 
 int
 mapi_dissect_struct_CreateFolder_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 IsExistingFolder = 0;
+	uint8_t IsExistingFolder = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -22279,7 +22280,7 @@ mapi_dissect_bitmap_DeleteFolderFlags(tvbuff_t *tvb _U_, int offset _U_, packet_
 		&hf_mapi_DeleteFolderFlags_DELETE_HARD_DELETE,
 		NULL
 	};
-	guint8 flags;
+	uint8_t flags;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
 				ett_mapi_DeleteFolderFlags, mapi_DeleteFolderFlags_fields, DREP_ENC_INTEGER(drep), BMT_NO_FALSE);
@@ -22643,7 +22644,7 @@ mapi_dissect_bitmap_ulMessageStatus(tvbuff_t *tvb _U_, int offset _U_, packet_in
 		&hf_mapi_ulMessageStatus_MSGSTATUS_REMOTE_DELETE,
 		NULL
 	};
-	guint32 flags;
+	uint32_t flags;
 	ALIGN_TO_4_BYTES;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
@@ -22898,9 +22899,9 @@ mapi_dissect_struct_GetAttachmentTable_repl(tvbuff_t *tvb _U_, int offset _U_, p
 /* IDL: } */
 
 int
-mapi_dissect_enum_OpenAttachmentFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_OpenAttachmentFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -23558,9 +23559,9 @@ mapi_dissect_struct_GetReceiveFolder_repl(tvbuff_t *tvb _U_, int offset _U_, pac
 /* IDL: } */
 
 int
-mapi_dissect_enum_NotificationFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint16 *param _U_)
+mapi_dissect_enum_NotificationFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint16_t *param _U_)
 {
-	guint16 parameter=0;
+	uint16_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -23591,7 +23592,7 @@ mapi_dissect_hyperbool(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -23654,7 +23655,7 @@ mapi_dissect_element_RegisterNotification_req_notificationFlags(tvbuff_t *tvb _U
 }
 
 static int
-mapi_dissect_element_RegisterNotification_req_layout(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *layout)
+mapi_dissect_element_RegisterNotification_req_layout(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *layout)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_RegisterNotification_req_layout, *layout);
 
@@ -23662,7 +23663,7 @@ mapi_dissect_element_RegisterNotification_req_layout(tvbuff_t *tvb _U_, int offs
 }
 
 static int
-mapi_dissect_element_RegisterNotification_req_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *layout)
+mapi_dissect_element_RegisterNotification_req_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *layout)
 {
 	offset = mapi_dissect_hyperbool(tvb, offset, pinfo, tree, di, drep, hf_mapi_RegisterNotification_req_u, *layout);
 
@@ -23672,7 +23673,7 @@ mapi_dissect_element_RegisterNotification_req_u(tvbuff_t *tvb _U_, int offset _U
 int
 mapi_dissect_struct_RegisterNotification_req(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 layout = 0;
+	uint8_t layout = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -23767,7 +23768,7 @@ mapi_dissect_bitmap_MsgFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pin
 		&hf_mapi_MsgFlags_MSGFLAG_NRN_PENDING,
 		NULL
 	};
-	guint32 flags;
+	uint32_t flags;
 	ALIGN_TO_4_BYTES;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
@@ -23814,7 +23815,7 @@ mapi_dissect_MessageClass(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo 
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -23907,9 +23908,9 @@ mapi_dissect_struct_GID(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U
 /* IDL: } */
 
 int
-mapi_dissect_enum_RichTableNotificationType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint16 *param _U_)
+mapi_dissect_enum_RichTableNotificationType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint16_t *param _U_)
 {
-	guint16 parameter=0;
+	uint16_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -23954,7 +23955,7 @@ mapi_dissect_element_NewMailNotification_MessageFlags(tvbuff_t *tvb _U_, int off
 }
 
 static int
-mapi_dissect_element_NewMailNotification_UnicodeFlag(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *UnicodeFlag)
+mapi_dissect_element_NewMailNotification_UnicodeFlag(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *UnicodeFlag)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_NewMailNotification_UnicodeFlag, *UnicodeFlag);
 
@@ -23962,7 +23963,7 @@ mapi_dissect_element_NewMailNotification_UnicodeFlag(tvbuff_t *tvb _U_, int offs
 }
 
 static int
-mapi_dissect_element_NewMailNotification_MessageClass(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *UnicodeFlag)
+mapi_dissect_element_NewMailNotification_MessageClass(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *UnicodeFlag)
 {
 	offset = mapi_dissect_MessageClass(tvb, offset, pinfo, tree, di, drep, hf_mapi_NewMailNotification_MessageClass, *UnicodeFlag);
 
@@ -23972,7 +23973,7 @@ mapi_dissect_element_NewMailNotification_MessageClass(tvbuff_t *tvb _U_, int off
 int
 mapi_dissect_struct_NewMailNotification(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 UnicodeFlag = 0;
+	uint8_t UnicodeFlag = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -24531,7 +24532,7 @@ mapi_dissect_HierarchyTableChangeUnion(tvbuff_t *tvb _U_, int offset _U_, packet
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -24566,7 +24567,7 @@ mapi_dissect_HierarchyTableChangeUnion(tvbuff_t *tvb _U_, int offset _U_, packet
 /* IDL: } */
 
 static int
-mapi_dissect_element_HierarchyTableChange_TableEvent(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *TableEvent)
+mapi_dissect_element_HierarchyTableChange_TableEvent(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *TableEvent)
 {
 	offset = mapi_dissect_enum_RichTableNotificationType(tvb, offset, pinfo, tree, di, drep, hf_mapi_HierarchyTableChange_TableEvent, TableEvent);
 
@@ -24574,7 +24575,7 @@ mapi_dissect_element_HierarchyTableChange_TableEvent(tvbuff_t *tvb _U_, int offs
 }
 
 static int
-mapi_dissect_element_HierarchyTableChange_HierarchyTableChangeUnion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *TableEvent)
+mapi_dissect_element_HierarchyTableChange_HierarchyTableChangeUnion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *TableEvent)
 {
 	offset = mapi_dissect_HierarchyTableChangeUnion(tvb, offset, pinfo, tree, di, drep, hf_mapi_HierarchyTableChange_HierarchyTableChangeUnion, *TableEvent);
 
@@ -24584,7 +24585,7 @@ mapi_dissect_element_HierarchyTableChange_HierarchyTableChangeUnion(tvbuff_t *tv
 int
 mapi_dissect_struct_HierarchyTableChange(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint16 TableEvent = 0;
+	uint16_t TableEvent = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -25545,7 +25546,7 @@ mapi_dissect_ContentsTableChangeUnion(tvbuff_t *tvb _U_, int offset _U_, packet_
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -25580,7 +25581,7 @@ mapi_dissect_ContentsTableChangeUnion(tvbuff_t *tvb _U_, int offset _U_, packet_
 /* IDL: } */
 
 static int
-mapi_dissect_element_ContentsTableChange_TableEvent(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *TableEvent)
+mapi_dissect_element_ContentsTableChange_TableEvent(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *TableEvent)
 {
 	offset = mapi_dissect_enum_RichTableNotificationType(tvb, offset, pinfo, tree, di, drep, hf_mapi_ContentsTableChange_TableEvent, TableEvent);
 
@@ -25588,7 +25589,7 @@ mapi_dissect_element_ContentsTableChange_TableEvent(tvbuff_t *tvb _U_, int offse
 }
 
 static int
-mapi_dissect_element_ContentsTableChange_ContentsTableChangeUnion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *TableEvent)
+mapi_dissect_element_ContentsTableChange_ContentsTableChangeUnion(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *TableEvent)
 {
 	offset = mapi_dissect_ContentsTableChangeUnion(tvb, offset, pinfo, tree, di, drep, hf_mapi_ContentsTableChange_ContentsTableChangeUnion, *TableEvent);
 
@@ -25598,7 +25599,7 @@ mapi_dissect_element_ContentsTableChange_ContentsTableChangeUnion(tvbuff_t *tvb 
 int
 mapi_dissect_struct_ContentsTableChange(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint16 TableEvent = 0;
+	uint16_t TableEvent = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -26081,7 +26082,7 @@ mapi_dissect_NotificationData(tvbuff_t *tvb _U_, int offset _U_, packet_info *pi
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -26211,7 +26212,7 @@ mapi_dissect_element_Notify_repl_LogonId(tvbuff_t *tvb _U_, int offset _U_, pack
 }
 
 static int
-mapi_dissect_element_Notify_repl_NotificationType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *NotificationType)
+mapi_dissect_element_Notify_repl_NotificationType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *NotificationType)
 {
 	offset = mapi_dissect_enum_NotificationFlags(tvb, offset, pinfo, tree, di, drep, hf_mapi_Notify_repl_NotificationType, NotificationType);
 
@@ -26219,7 +26220,7 @@ mapi_dissect_element_Notify_repl_NotificationType(tvbuff_t *tvb _U_, int offset 
 }
 
 static int
-mapi_dissect_element_Notify_repl_NotificationData(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *NotificationType)
+mapi_dissect_element_Notify_repl_NotificationData(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *NotificationType)
 {
 	offset = mapi_dissect_NotificationData(tvb, offset, pinfo, tree, di, drep, hf_mapi_Notify_repl_NotificationData, *NotificationType);
 
@@ -26229,7 +26230,7 @@ mapi_dissect_element_Notify_repl_NotificationData(tvbuff_t *tvb _U_, int offset 
 int
 mapi_dissect_struct_Notify_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint16 NotificationType = 0;
+	uint16_t NotificationType = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -26270,9 +26271,9 @@ mapi_dissect_struct_Notify_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *
 /* IDL: } */
 
 int
-mapi_dissect_enum_OpenStream_OpenModeFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_OpenStream_OpenModeFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -26429,7 +26430,7 @@ mapi_dissect_MaximumByteCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pi
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -26474,7 +26475,7 @@ mapi_dissect_element_ReadStream_req_InputHandleIndex(tvbuff_t *tvb _U_, int offs
 }
 
 static int
-mapi_dissect_element_ReadStream_req_ByteCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *ByteCount)
+mapi_dissect_element_ReadStream_req_ByteCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *ByteCount)
 {
 	offset = PIDL_dissect_uint16(tvb, offset, pinfo, tree, di, drep, hf_mapi_ReadStream_req_ByteCount, *ByteCount);
 
@@ -26482,7 +26483,7 @@ mapi_dissect_element_ReadStream_req_ByteCount(tvbuff_t *tvb _U_, int offset _U_,
 }
 
 static int
-mapi_dissect_element_ReadStream_req_MaximumByteCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *ByteCount)
+mapi_dissect_element_ReadStream_req_MaximumByteCount(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *ByteCount)
 {
 	offset = mapi_dissect_MaximumByteCount(tvb, offset, pinfo, tree, di, drep, hf_mapi_ReadStream_req_MaximumByteCount, *ByteCount);
 
@@ -26492,7 +26493,7 @@ mapi_dissect_element_ReadStream_req_MaximumByteCount(tvbuff_t *tvb _U_, int offs
 int
 mapi_dissect_struct_ReadStream_req(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint16 ByteCount = 0;
+	uint16_t ByteCount = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -26905,7 +26906,7 @@ mapi_dissect_bitmap_SearchFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *
 		&hf_mapi_SearchFlags_STATIC_SEARCH,
 		NULL
 	};
-	guint32 flags;
+	uint32_t flags;
 	ALIGN_TO_4_BYTES;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
@@ -27242,9 +27243,9 @@ mapi_dissect_struct_GetSearchCriteria_repl(tvbuff_t *tvb _U_, int offset _U_, pa
 /* IDL: } */
 
 int
-mapi_dissect_enum_SubmitFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_SubmitFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -27610,7 +27611,7 @@ mapi_dissect_Folder_name(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -27657,7 +27658,7 @@ mapi_dissect_element_MoveFolder_req_WantAsynchronous(tvbuff_t *tvb _U_, int offs
 }
 
 static int
-mapi_dissect_element_MoveFolder_req_UseUnicode(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *UseUnicode)
+mapi_dissect_element_MoveFolder_req_UseUnicode(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *UseUnicode)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_MoveFolder_req_UseUnicode, *UseUnicode);
 
@@ -27673,7 +27674,7 @@ mapi_dissect_element_MoveFolder_req_FolderId(tvbuff_t *tvb _U_, int offset _U_, 
 }
 
 static int
-mapi_dissect_element_MoveFolder_req_NewFolderName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *UseUnicode)
+mapi_dissect_element_MoveFolder_req_NewFolderName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *UseUnicode)
 {
 	offset = mapi_dissect_Folder_name(tvb, offset, pinfo, tree, di, drep, hf_mapi_MoveFolder_req_NewFolderName, *UseUnicode);
 
@@ -27683,7 +27684,7 @@ mapi_dissect_element_MoveFolder_req_NewFolderName(tvbuff_t *tvb _U_, int offset 
 int
 mapi_dissect_struct_MoveFolder_req(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 UseUnicode = 0;
+	uint8_t UseUnicode = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -27793,7 +27794,7 @@ mapi_dissect_element_CopyFolder_req_WantRecursive(tvbuff_t *tvb _U_, int offset 
 }
 
 static int
-mapi_dissect_element_CopyFolder_req_UseUnicode(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *UseUnicode)
+mapi_dissect_element_CopyFolder_req_UseUnicode(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *UseUnicode)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_CopyFolder_req_UseUnicode, *UseUnicode);
 
@@ -27809,7 +27810,7 @@ mapi_dissect_element_CopyFolder_req_FolderId(tvbuff_t *tvb _U_, int offset _U_, 
 }
 
 static int
-mapi_dissect_element_CopyFolder_req_NewFolderName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *UseUnicode)
+mapi_dissect_element_CopyFolder_req_NewFolderName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *UseUnicode)
 {
 	offset = mapi_dissect_Folder_name(tvb, offset, pinfo, tree, di, drep, hf_mapi_CopyFolder_req_NewFolderName, *UseUnicode);
 
@@ -27819,7 +27820,7 @@ mapi_dissect_element_CopyFolder_req_NewFolderName(tvbuff_t *tvb _U_, int offset 
 int
 mapi_dissect_struct_CopyFolder_req(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 UseUnicode = 0;
+	uint8_t UseUnicode = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -28116,7 +28117,7 @@ mapi_dissect_bitmap_CopyFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pi
 		&hf_mapi_CopyFlags_CopyFlagsNoOverwrite,
 		NULL
 	};
-	guint8 flags;
+	uint8_t flags;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
 				ett_mapi_CopyFlags, mapi_CopyFlags_fields, DREP_ENC_INTEGER(drep), BMT_NO_FALSE);
@@ -28487,7 +28488,7 @@ mapi_dissect_bitmap_PermissionsTableFlags(tvbuff_t *tvb _U_, int offset _U_, pac
 		&hf_mapi_PermissionsTableFlags_IncludeFreeBusy,
 		NULL
 	};
-	guint8 flags;
+	uint8_t flags;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
 				ett_mapi_PermissionsTableFlags, mapi_PermissionsTableFlags_fields, DREP_ENC_INTEGER(drep), BMT_NO_FALSE);
@@ -28620,7 +28621,7 @@ mapi_dissect_bitmap_RulesTableFlags(tvbuff_t *tvb _U_, int offset _U_, packet_in
 		&hf_mapi_RulesTableFlags_RulesTableFlags_Unicode,
 		NULL
 	};
-	guint8 flags;
+	uint8_t flags;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
 				ett_mapi_RulesTableFlags, mapi_RulesTableFlags_fields, DREP_ENC_INTEGER(drep), BMT_NO_FALSE);
@@ -28755,7 +28756,7 @@ mapi_dissect_bitmap_ModifyPermissionsFlags(tvbuff_t *tvb _U_, int offset _U_, pa
 		&hf_mapi_ModifyPermissionsFlags_ModifyPerms_ReplaceRows,
 		NULL
 	};
-	guint8 flags;
+	uint8_t flags;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
 				ett_mapi_ModifyPermissionsFlags, mapi_ModifyPermissionsFlags_fields, DREP_ENC_INTEGER(drep), BMT_NO_FALSE);
@@ -29052,7 +29053,7 @@ mapi_dissect_bitmap_ModifyRulesFlag(tvbuff_t *tvb _U_, int offset _U_, packet_in
 		&hf_mapi_ModifyRulesFlag_ModifyRulesFlag_Replace,
 		NULL
 	};
-	guint8 flags;
+	uint8_t flags;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
 				ett_mapi_ModifyRulesFlag, mapi_ModifyRulesFlag_fields, DREP_ENC_INTEGER(drep), BMT_NO_FALSE);
@@ -29522,7 +29523,7 @@ mapi_dissect_LongTermIdFromId_repl_status(tvbuff_t *tvb _U_, int offset _U_, pac
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -29558,7 +29559,7 @@ mapi_dissect_element_LongTermIdFromId_repl_InputHandleIndex(tvbuff_t *tvb _U_, i
 }
 
 static int
-mapi_dissect_element_LongTermIdFromId_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_LongTermIdFromId_repl_ReturnValue(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = PIDL_dissect_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_LongTermIdFromId_repl_ReturnValue, *ReturnValue);
 
@@ -29566,7 +29567,7 @@ mapi_dissect_element_LongTermIdFromId_repl_ReturnValue(tvbuff_t *tvb _U_, int of
 }
 
 static int
-mapi_dissect_element_LongTermIdFromId_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint32 *ReturnValue)
+mapi_dissect_element_LongTermIdFromId_repl_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint32_t *ReturnValue)
 {
 	offset = mapi_dissect_LongTermIdFromId_repl_status(tvb, offset, pinfo, tree, di, drep, hf_mapi_LongTermIdFromId_repl_repl, *ReturnValue);
 
@@ -29576,7 +29577,7 @@ mapi_dissect_element_LongTermIdFromId_repl_repl(tvbuff_t *tvb _U_, int offset _U
 int
 mapi_dissect_struct_LongTermIdFromId_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint32 ReturnValue = 0;
+	uint32_t ReturnValue = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -29780,7 +29781,7 @@ mapi_dissect_struct_PublicFolderIsGhosted_req(tvbuff_t *tvb _U_, int offset _U_,
 /* IDL: } */
 
 static int
-mapi_dissect_element_PublicFolderIsGhosted_repl_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted)
+mapi_dissect_element_PublicFolderIsGhosted_repl_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_PublicFolderIsGhosted_repl_IsGhosted, *IsGhosted);
 
@@ -29788,7 +29789,7 @@ mapi_dissect_element_PublicFolderIsGhosted_repl_IsGhosted(tvbuff_t *tvb _U_, int
 }
 
 static int
-mapi_dissect_element_PublicFolderIsGhosted_repl_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted)
+mapi_dissect_element_PublicFolderIsGhosted_repl_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted)
 {
 	offset = mapi_dissect_IsGhosted(tvb, offset, pinfo, tree, di, drep, hf_mapi_PublicFolderIsGhosted_repl_Ghost, *IsGhosted);
 
@@ -29798,7 +29799,7 @@ mapi_dissect_element_PublicFolderIsGhosted_repl_Ghost(tvbuff_t *tvb _U_, int off
 int
 mapi_dissect_struct_PublicFolderIsGhosted_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 IsGhosted = 0;
+	uint8_t IsGhosted = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -29834,9 +29835,9 @@ mapi_dissect_struct_PublicFolderIsGhosted_repl(tvbuff_t *tvb _U_, int offset _U_
 /* IDL: } */
 
 int
-mapi_dissect_enum_OpenEmbeddedMessage_OpenModeFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_OpenEmbeddedMessage_OpenModeFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -30176,9 +30177,9 @@ mapi_dissect_struct_SetSpooler_repl(tvbuff_t *tvb _U_, int offset _U_, packet_in
 /* IDL: } */
 
 int
-mapi_dissect_enum_LockState(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_LockState(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -30486,7 +30487,7 @@ mapi_dissect_TransportSend_lpProps(tvbuff_t *tvb _U_, int offset _U_, packet_inf
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -30513,7 +30514,7 @@ mapi_dissect_TransportSend_lpProps(tvbuff_t *tvb _U_, int offset _U_, packet_inf
 /* IDL: } */
 
 static int
-mapi_dissect_element_TransportSend_repl_NoPropertiesReturned(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *NoPropertiesReturned)
+mapi_dissect_element_TransportSend_repl_NoPropertiesReturned(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *NoPropertiesReturned)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_TransportSend_repl_NoPropertiesReturned, *NoPropertiesReturned);
 
@@ -30521,7 +30522,7 @@ mapi_dissect_element_TransportSend_repl_NoPropertiesReturned(tvbuff_t *tvb _U_, 
 }
 
 static int
-mapi_dissect_element_TransportSend_repl_properties(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *NoPropertiesReturned)
+mapi_dissect_element_TransportSend_repl_properties(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *NoPropertiesReturned)
 {
 	offset = mapi_dissect_TransportSend_lpProps(tvb, offset, pinfo, tree, di, drep, hf_mapi_TransportSend_repl_properties, *NoPropertiesReturned);
 
@@ -30531,7 +30532,7 @@ mapi_dissect_element_TransportSend_repl_properties(tvbuff_t *tvb _U_, int offset
 int
 mapi_dissect_struct_TransportSend_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 NoPropertiesReturned = 0;
+	uint8_t NoPropertiesReturned = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -30631,9 +30632,9 @@ mapi_dissect_struct_FastTransferSourceGetBuffer_req(tvbuff_t *tvb _U_, int offse
 /* IDL: } */
 
 int
-mapi_dissect_enum_TransferStatus(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint16 *param _U_)
+mapi_dissect_enum_TransferStatus(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint16_t *param _U_)
 {
-	guint16 parameter=0;
+	uint16_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -30736,9 +30737,9 @@ mapi_dissect_struct_FastTransferSourceGetBuffer_repl(tvbuff_t *tvb _U_, int offs
 /* IDL: } */
 
 int
-mapi_dissect_enum_FindRow_ulFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_FindRow_ulFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -31266,9 +31267,9 @@ mapi_dissect_struct_GetValidAttachments_repl(tvbuff_t *tvb _U_, int offset _U_, 
 /* IDL: } */
 
 int
-mapi_dissect_enum_ulKind(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_ulKind(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -31359,7 +31360,7 @@ mapi_dissect_Kind(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, pro
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -31388,7 +31389,7 @@ mapi_dissect_Kind(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, pro
 /* IDL: } */
 
 static int
-mapi_dissect_element_MAPINAMEID_ulKind(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ulKind)
+mapi_dissect_element_MAPINAMEID_ulKind(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ulKind)
 {
 	offset = mapi_dissect_enum_ulKind(tvb, offset, pinfo, tree, di, drep, hf_mapi_MAPINAMEID_ulKind, ulKind);
 
@@ -31404,7 +31405,7 @@ mapi_dissect_element_MAPINAMEID_lpguid(tvbuff_t *tvb _U_, int offset _U_, packet
 }
 
 static int
-mapi_dissect_element_MAPINAMEID_kind(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *ulKind)
+mapi_dissect_element_MAPINAMEID_kind(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *ulKind)
 {
 	offset = mapi_dissect_Kind(tvb, offset, pinfo, tree, di, drep, hf_mapi_MAPINAMEID_kind, *ulKind);
 
@@ -31414,7 +31415,7 @@ mapi_dissect_element_MAPINAMEID_kind(tvbuff_t *tvb _U_, int offset _U_, packet_i
 int
 mapi_dissect_struct_MAPINAMEID(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 ulKind = 0;
+	uint8_t ulKind = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -32611,7 +32612,7 @@ mapi_dissect_bitmap_QueryFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *p
 		&hf_mapi_QueryFlags_NoIds,
 		NULL
 	};
-	guint8 flags;
+	uint8_t flags;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
 				ett_mapi_QueryFlags, mapi_QueryFlags_fields, DREP_ENC_INTEGER(drep), BMT_NO_FALSE);
@@ -32649,7 +32650,7 @@ mapi_dissect_QueryNamedProperties_guid(tvbuff_t *tvb _U_, int offset _U_, packet
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -32703,7 +32704,7 @@ mapi_dissect_element_QueryNamedProperties_req_QueryFlags(tvbuff_t *tvb _U_, int 
 }
 
 static int
-mapi_dissect_element_QueryNamedProperties_req_HasGuid(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *HasGuid)
+mapi_dissect_element_QueryNamedProperties_req_HasGuid(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *HasGuid)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_QueryNamedProperties_req_HasGuid, *HasGuid);
 
@@ -32711,7 +32712,7 @@ mapi_dissect_element_QueryNamedProperties_req_HasGuid(tvbuff_t *tvb _U_, int off
 }
 
 static int
-mapi_dissect_element_QueryNamedProperties_req_PropertyGuid(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *HasGuid)
+mapi_dissect_element_QueryNamedProperties_req_PropertyGuid(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *HasGuid)
 {
 	offset = mapi_dissect_QueryNamedProperties_guid(tvb, offset, pinfo, tree, di, drep, hf_mapi_QueryNamedProperties_req_PropertyGuid, *HasGuid);
 
@@ -32721,7 +32722,7 @@ mapi_dissect_element_QueryNamedProperties_req_PropertyGuid(tvbuff_t *tvb _U_, in
 int
 mapi_dissect_struct_QueryNamedProperties_req(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 HasGuid = 0;
+	uint8_t HasGuid = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -34184,7 +34185,7 @@ mapi_dissect_OptionsData_HelpFileName(tvbuff_t *tvb _U_, int offset _U_, packet_
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -34230,7 +34231,7 @@ mapi_dissect_element_OptionsData_repl_OptionsInfo(tvbuff_t *tvb _U_, int offset 
 }
 
 static int
-mapi_dissect_element_OptionsData_repl_HelpFileSize(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *HelpFileSize)
+mapi_dissect_element_OptionsData_repl_HelpFileSize(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *HelpFileSize)
 {
 	offset = PIDL_dissect_uint16(tvb, offset, pinfo, tree, di, drep, hf_mapi_OptionsData_repl_HelpFileSize, *HelpFileSize);
 
@@ -34254,7 +34255,7 @@ mapi_dissect_element_OptionsData_repl_HelpFile_(tvbuff_t *tvb _U_, int offset _U
 }
 
 static int
-mapi_dissect_element_OptionsData_repl_HelpFileName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint16 *HelpFileSize)
+mapi_dissect_element_OptionsData_repl_HelpFileName(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint16_t *HelpFileSize)
 {
 	offset = mapi_dissect_OptionsData_HelpFileName(tvb, offset, pinfo, tree, di, drep, hf_mapi_OptionsData_repl_HelpFileName, *HelpFileSize);
 
@@ -34264,7 +34265,7 @@ mapi_dissect_element_OptionsData_repl_HelpFileName(tvbuff_t *tvb _U_, int offset
 int
 mapi_dissect_struct_OptionsData_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint16 HelpFileSize = 0;
+	uint16_t HelpFileSize = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -34305,9 +34306,9 @@ mapi_dissect_struct_OptionsData_repl(tvbuff_t *tvb _U_, int offset _U_, packet_i
 /* IDL: } */
 
 int
-mapi_dissect_enum_SynchronizationType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_SynchronizationType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -34339,7 +34340,7 @@ mapi_dissect_bitmap_SendOptions(tvbuff_t *tvb _U_, int offset _U_, packet_info *
 		&hf_mapi_SendOptions_SendOptions_Partial,
 		NULL
 	};
-	guint8 flags;
+	uint8_t flags;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
 				ett_mapi_SendOptions, mapi_SendOptions_fields, DREP_ENC_INTEGER(drep), BMT_NO_FALSE);
@@ -34392,7 +34393,7 @@ mapi_dissect_bitmap_SynchronizationFlag(tvbuff_t *tvb _U_, int offset _U_, packe
 		&hf_mapi_SynchronizationFlag_SynchronizationFlag_Progress,
 		NULL
 	};
-	guint16 flags;
+	uint16_t flags;
 	ALIGN_TO_2_BYTES;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
@@ -34430,7 +34431,7 @@ mapi_dissect_bitmap_SynchronizationExtraFlags(tvbuff_t *tvb _U_, int offset _U_,
 		&hf_mapi_SynchronizationExtraFlags_OrderByDeliveryTime,
 		NULL
 	};
-	guint32 flags;
+	uint32_t flags;
 	ALIGN_TO_4_BYTES;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
@@ -34621,7 +34622,7 @@ mapi_dissect_bitmap_ImportFlag(tvbuff_t *tvb _U_, int offset _U_, packet_info *p
 		&hf_mapi_ImportFlag_ImportFlag_FailOnConflict,
 		NULL
 	};
-	guint8 flags;
+	uint8_t flags;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
 				ett_mapi_ImportFlag, mapi_ImportFlag_fields, DREP_ENC_INTEGER(drep), BMT_NO_FALSE);
@@ -34991,9 +34992,9 @@ mapi_dissect_struct_SyncImportDeletes_repl(tvbuff_t *tvb _U_, int offset _U_, pa
 /* IDL: } */
 
 int
-mapi_dissect_enum_StateProperty(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint32 *param _U_)
+mapi_dissect_enum_StateProperty(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t *param _U_)
 {
-	guint32 parameter=0;
+	uint32_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -36212,7 +36213,7 @@ mapi_dissect_element_OpenPublicFolderByName_repl_HasRules(tvbuff_t *tvb _U_, int
 }
 
 static int
-mapi_dissect_element_OpenPublicFolderByName_repl_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted)
+mapi_dissect_element_OpenPublicFolderByName_repl_IsGhosted(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted)
 {
 	offset = PIDL_dissect_uint8(tvb, offset, pinfo, tree, di, drep, hf_mapi_OpenPublicFolderByName_repl_IsGhosted, *IsGhosted);
 
@@ -36220,7 +36221,7 @@ mapi_dissect_element_OpenPublicFolderByName_repl_IsGhosted(tvbuff_t *tvb _U_, in
 }
 
 static int
-mapi_dissect_element_OpenPublicFolderByName_repl_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *IsGhosted)
+mapi_dissect_element_OpenPublicFolderByName_repl_Ghost(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *IsGhosted)
 {
 	offset = mapi_dissect_IsGhosted(tvb, offset, pinfo, tree, di, drep, hf_mapi_OpenPublicFolderByName_repl_Ghost, *IsGhosted);
 
@@ -36230,7 +36231,7 @@ mapi_dissect_element_OpenPublicFolderByName_repl_Ghost(tvbuff_t *tvb _U_, int of
 int
 mapi_dissect_struct_OpenPublicFolderByName_repl(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 IsGhosted = 0;
+	uint8_t IsGhosted = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -36793,9 +36794,9 @@ mapi_dissect_struct_HardDeleteMessagesAndSubfolders_repl(tvbuff_t *tvb _U_, int 
 /* IDL: } */
 
 int
-mapi_dissect_enum_LogonFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_LogonFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -36829,9 +36830,9 @@ mapi_dissect_enum_LogonFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info *pin
 /* IDL: } */
 
 int
-mapi_dissect_enum_DayOfWeek(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_DayOfWeek(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -36968,7 +36969,7 @@ mapi_dissect_bitmap_ResponseFlags(tvbuff_t *tvb _U_, int offset _U_, packet_info
 		&hf_mapi_ResponseFlags_ResponseFlags_OOF,
 		NULL
 	};
-	guint8 flags;
+	uint8_t flags;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
 				ett_mapi_ResponseFlags, mapi_ResponseFlags_fields, DREP_ENC_INTEGER(drep), BMT_NO_FALSE);
@@ -38340,7 +38341,7 @@ mapi_dissect_RopRequest(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -39932,7 +39933,7 @@ mapi_dissect_RopReply(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_,
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -40439,7 +40440,7 @@ mapi_dissect_RopReply(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_,
 /* IDL: } */
 
 static int
-mapi_dissect_element_EcDoRpcMapiRequest_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *opnum)
+mapi_dissect_element_EcDoRpcMapiRequest_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *opnum)
 {
 	offset = mapi_dissect_RopRequest(tvb, offset, pinfo, tree, di, drep, hf_mapi_EcDoRpcMapiRequest_u, *opnum);
 
@@ -40453,7 +40454,7 @@ mapi_dissect_element_EcDoRpcMapiRequest_u(tvbuff_t *tvb _U_, int offset _U_, pac
 /* IDL: } */
 
 static int
-mapi_dissect_element_EcDoRpcMapiResponse_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *opnum)
+mapi_dissect_element_EcDoRpcMapiResponse_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *opnum)
 {
 	offset = mapi_dissect_RopReply(tvb, offset, pinfo, tree, di, drep, hf_mapi_EcDoRpcMapiResponse_u, *opnum);
 
@@ -40526,9 +40527,9 @@ mapi_dissect_element_response_rpcResponse(tvbuff_t *tvb _U_, int offset _U_, pac
 /* IDL: } */
 
 int
-mapi_dissect_enum_AUX_HEADER_TYPE_1(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_AUX_HEADER_TYPE_1(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -40555,9 +40556,9 @@ mapi_dissect_enum_AUX_HEADER_TYPE_1(tvbuff_t *tvb _U_, int offset _U_, packet_in
 /* IDL: } */
 
 int
-mapi_dissect_enum_AUX_HEADER_TYPE_2(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_AUX_HEADER_TYPE_2(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -40575,9 +40576,9 @@ mapi_dissect_enum_AUX_HEADER_TYPE_2(tvbuff_t *tvb _U_, int offset _U_, packet_in
 /* IDL: } */
 
 int
-mapi_dissect_enum_AUX_VERSION(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint8 *param _U_)
+mapi_dissect_enum_AUX_VERSION(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint8_t *param _U_)
 {
-	guint8 parameter=0;
+	uint8_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -40655,9 +40656,9 @@ mapi_dissect_struct_AUX_PERF_REQUESTID(tvbuff_t *tvb _U_, int offset _U_, packet
 /* IDL: } */
 
 int
-mapi_dissect_enum_ClientMode(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint16 *param _U_)
+mapi_dissect_enum_ClientMode(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint16_t *param _U_)
 {
-	guint16 parameter=0;
+	uint16_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -40733,9 +40734,9 @@ mapi_dissect_element_AUX_PERF_CLIENTINFO_Reserved(tvbuff_t *tvb _U_, int offset 
 /* IDL: } */
 
 int
-mapi_dissect_enum_SERVERINFO_ServerType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, guint16 *param _U_)
+mapi_dissect_enum_SERVERINFO_ServerType(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint16_t *param _U_)
 {
-	guint16 parameter=0;
+	uint16_t parameter=0;
 	if (param) {
 		parameter = *param;
 	}
@@ -41950,7 +41951,7 @@ mapi_dissect_bitmap_CLIENT_CONTROL_EnableFlags(tvbuff_t *tvb _U_, int offset _U_
 		&hf_mapi_CLIENT_CONTROL_EnableFlags_ENABLE_PERF_SENDGCDATA,
 		NULL
 	};
-	guint32 flags;
+	uint32_t flags;
 	ALIGN_TO_4_BYTES;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
@@ -42248,7 +42249,7 @@ mapi_dissect_bitmap_EXORGINFO_OrgFlags(tvbuff_t *tvb _U_, int offset _U_, packet
 		&hf_mapi_EXORGINFO_OrgFlags_PUBLIC_FOLDERS_ENABLED,
 		NULL
 	};
-	guint32 flags;
+	uint32_t flags;
 	ALIGN_TO_4_BYTES;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
@@ -42534,7 +42535,7 @@ mapi_dissect_AuxDataVersion1(tvbuff_t *tvb _U_, int offset _U_, packet_info *pin
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -42869,7 +42870,7 @@ mapi_dissect_AuxDataVersion2(tvbuff_t *tvb _U_, int offset _U_, packet_info *pin
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	int old_offset;
-	guint32 level = param;
+	uint32_t level = param;
 
 	old_offset = offset;
 	if (parent_tree) {
@@ -42994,7 +42995,7 @@ mapi_dissect_AuxDataVersion2(tvbuff_t *tvb _U_, int offset _U_, packet_info *pin
 /* IDL: } */
 
 static int
-mapi_dissect_element_AUX_HEADER_Version(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *Version)
+mapi_dissect_element_AUX_HEADER_Version(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *Version)
 {
 	offset = mapi_dissect_enum_AUX_VERSION(tvb, offset, pinfo, tree, di, drep, hf_mapi_AUX_HEADER_Version, Version);
 
@@ -43018,7 +43019,7 @@ mapi_dissect_bitmap_RPC_HEADER_EXT_Flags(tvbuff_t *tvb _U_, int offset _U_, pack
 		&hf_mapi_RPC_HEADER_EXT_Flags_RHEF_Last,
 		NULL
 	};
-	guint16 flags;
+	uint16_t flags;
 	ALIGN_TO_2_BYTES;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
@@ -43199,7 +43200,7 @@ mapi_dissect_bitmap_RpcExt2Flags(tvbuff_t *tvb _U_, int offset _U_, packet_info 
 		&hf_mapi_RpcExt2Flags_Chain,
 		NULL
 	};
-	guint32 flags;
+	uint32_t flags;
 	ALIGN_TO_4_BYTES;
 
 	item = proto_tree_add_bitmask_with_flags(parent_tree, tvb, offset, hf_index,
@@ -43225,7 +43226,7 @@ mapi_dissect_bitmap_RpcExt2Flags(tvbuff_t *tvb _U_, int offset _U_, packet_info 
 /* IDL: } */
 
 static int
-mapi_dissect_element_RopInput_RopId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *RopId)
+mapi_dissect_element_RopInput_RopId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *RopId)
 {
 	offset = mapi_dissect_enum_ROP_OPNUM(tvb, offset, pinfo, tree, di, drep, hf_mapi_RopInput_RopId, RopId);
 
@@ -43233,7 +43234,7 @@ mapi_dissect_element_RopInput_RopId(tvbuff_t *tvb _U_, int offset _U_, packet_in
 }
 
 static int
-mapi_dissect_element_RopInput_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *RopId)
+mapi_dissect_element_RopInput_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *RopId)
 {
 	offset = mapi_dissect_RopRequest(tvb, offset, pinfo, tree, di, drep, hf_mapi_RopInput_u, *RopId);
 
@@ -43243,7 +43244,7 @@ mapi_dissect_element_RopInput_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *
 int
 mapi_dissect_struct_RopInput(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 RopId = 0;
+	uint8_t RopId = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -43368,7 +43369,7 @@ mapi_dissect_struct_ROPInputBuffer(tvbuff_t *tvb _U_, int offset _U_, packet_inf
 /* IDL: } */
 
 static int
-mapi_dissect_element_RopOutput_RopId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *RopId)
+mapi_dissect_element_RopOutput_RopId(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *RopId)
 {
 	offset = mapi_dissect_enum_ROP_OPNUM(tvb, offset, pinfo, tree, di, drep, hf_mapi_RopOutput_RopId, RopId);
 
@@ -43376,7 +43377,7 @@ mapi_dissect_element_RopOutput_RopId(tvbuff_t *tvb _U_, int offset _U_, packet_i
 }
 
 static int
-mapi_dissect_element_RopOutput_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, guint8 *RopId)
+mapi_dissect_element_RopOutput_u(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, uint8_t *RopId)
 {
 	offset = mapi_dissect_RopReply(tvb, offset, pinfo, tree, di, drep, hf_mapi_RopOutput_u, *RopId);
 
@@ -43386,7 +43387,7 @@ mapi_dissect_element_RopOutput_u(tvbuff_t *tvb _U_, int offset _U_, packet_info 
 int
 mapi_dissect_struct_RopOutput(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *parent_tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_, int hf_index _U_, uint32_t param _U_)
 {
-	guint8 RopId = 0;
+	uint8_t RopId = 0;
 	proto_item *item = NULL;
 	proto_tree *tree = NULL;
 	bool oldalign = di->no_align;
@@ -43744,7 +43745,7 @@ mapi_dissect_element_EcDoConnect_pullTimeStamp_(tvbuff_t *tvb _U_, int offset _U
 static int
 mapi_dissect_EcDoConnect_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint32 status;
+	uint32_t status;
 
 	di->dcerpc_procedure_name="EcDoConnect";
 	offset = mapi_dissect_element_EcDoConnect_hBinding(tvb, offset, pinfo, tree, di, drep);
@@ -43780,7 +43781,7 @@ mapi_dissect_EcDoConnect_response(tvbuff_t *tvb _U_, int offset _U_, packet_info
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_werror, &status);
 
 	if (status != 0)
-		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str(status, WERR_errors, "Unknown DOS error 0x%08x"));
+		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str_ext(status, &WERR_errors_ext, "Unknown DOS error 0x%08x"));
 
 	return offset;
 }
@@ -43837,7 +43838,7 @@ mapi_dissect_element_EcDoDisconnect_pcxh_(tvbuff_t *tvb _U_, int offset _U_, pac
 static int
 mapi_dissect_EcDoDisconnect_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint32 status;
+	uint32_t status;
 
 	di->dcerpc_procedure_name="EcDoDisconnect";
 	offset = mapi_dissect_element_EcDoDisconnect_pcxh(tvb, offset, pinfo, tree, di, drep);
@@ -43846,7 +43847,7 @@ mapi_dissect_EcDoDisconnect_response(tvbuff_t *tvb _U_, int offset _U_, packet_i
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_werror, &status);
 
 	if (status != 0)
-		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str(status, WERR_errors, "Unknown DOS error 0x%08x"));
+		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str_ext(status, &WERR_errors_ext, "Unknown DOS error 0x%08x"));
 
 	return offset;
 }
@@ -43945,7 +43946,7 @@ mapi_dissect_element_EcDoRpc_max_data(tvbuff_t *tvb _U_, int offset _U_, packet_
 static int
 mapi_dissect_EcDoRpc_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint32 status;
+	uint32_t status;
 
 	di->dcerpc_procedure_name="EcDoRpc";
 	offset = mapi_dissect_element_EcDoRpc_handle(tvb, offset, pinfo, tree, di, drep);
@@ -43966,7 +43967,7 @@ mapi_dissect_EcDoRpc_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pi
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_werror, &status);
 
 	if (status != 0)
-		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str(status, WERR_errors, "Unknown DOS error 0x%08x"));
+		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str_ext(status, &WERR_errors_ext, "Unknown DOS error 0x%08x"));
 
 	return offset;
 }
@@ -44064,7 +44065,7 @@ mapi_dissect_element_EcGetMoreRpc_usSize(tvbuff_t *tvb _U_, int offset _U_, pack
 static int
 mapi_dissect_EcGetMoreRpc_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint32 status;
+	uint32_t status;
 
 	di->dcerpc_procedure_name="EcGetMoreRpc";
 	offset = mapi_dissect_element_EcGetMoreRpc_pcxh(tvb, offset, pinfo, tree, di, drep);
@@ -44079,7 +44080,7 @@ mapi_dissect_EcGetMoreRpc_response(tvbuff_t *tvb _U_, int offset _U_, packet_inf
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_werror, &status);
 
 	if (status != 0)
-		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str(status, WERR_errors, "Unknown DOS error 0x%08x"));
+		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str_ext(status, &WERR_errors_ext, "Unknown DOS error 0x%08x"));
 
 	return offset;
 }
@@ -44225,7 +44226,7 @@ mapi_dissect_element_EcRRegisterPushNotification_hNotification_(tvbuff_t *tvb _U
 static int
 mapi_dissect_EcRRegisterPushNotification_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint32 status;
+	uint32_t status;
 
 	di->dcerpc_procedure_name="EcRRegisterPushNotification";
 	offset = mapi_dissect_element_EcRRegisterPushNotification_handle(tvb, offset, pinfo, tree, di, drep);
@@ -44237,7 +44238,7 @@ mapi_dissect_EcRRegisterPushNotification_response(tvbuff_t *tvb _U_, int offset 
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_werror, &status);
 
 	if (status != 0)
-		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str(status, WERR_errors, "Unknown DOS error 0x%08x"));
+		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str_ext(status, &WERR_errors_ext, "Unknown DOS error 0x%08x"));
 
 	return offset;
 }
@@ -44304,7 +44305,7 @@ mapi_dissect_element_EcRUnregisterPushNotification_hNotification(tvbuff_t *tvb _
 static int
 mapi_dissect_EcRUnregisterPushNotification_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint32 status;
+	uint32_t status;
 
 	di->dcerpc_procedure_name="EcRUnregisterPushNotification";
 	offset = mapi_dissect_element_EcRUnregisterPushNotification_handle(tvb, offset, pinfo, tree, di, drep);
@@ -44313,7 +44314,7 @@ mapi_dissect_EcRUnregisterPushNotification_response(tvbuff_t *tvb _U_, int offse
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_werror, &status);
 
 	if (status != 0)
-		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str(status, WERR_errors, "Unknown DOS error 0x%08x"));
+		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str_ext(status, &WERR_errors_ext, "Unknown DOS error 0x%08x"));
 
 	return offset;
 }
@@ -44338,13 +44339,13 @@ mapi_dissect_EcRUnregisterPushNotification_request(tvbuff_t *tvb _U_, int offset
 static int
 mapi_dissect_EcDummyRpc_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint32 status;
+	uint32_t status;
 
 	di->dcerpc_procedure_name="EcDummyRpc";
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_werror, &status);
 
 	if (status != 0)
-		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str(status, WERR_errors, "Unknown DOS error 0x%08x"));
+		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str_ext(status, &WERR_errors_ext, "Unknown DOS error 0x%08x"));
 
 	return offset;
 }
@@ -44418,7 +44419,7 @@ mapi_dissect_element_EcRGetDCName_rgchDomainController_(tvbuff_t *tvb _U_, int o
 static int
 mapi_dissect_EcRGetDCName_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint32 status;
+	uint32_t status;
 
 	di->dcerpc_procedure_name="EcRGetDCName";
 	offset = mapi_dissect_element_EcRGetDCName_handle(tvb, offset, pinfo, tree, di, drep);
@@ -44430,7 +44431,7 @@ mapi_dissect_EcRGetDCName_response(tvbuff_t *tvb _U_, int offset _U_, packet_inf
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_werror, &status);
 
 	if (status != 0)
-		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str(status, WERR_errors, "Unknown DOS error 0x%08x"));
+		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str_ext(status, &WERR_errors_ext, "Unknown DOS error 0x%08x"));
 
 	return offset;
 }
@@ -44491,7 +44492,7 @@ mapi_dissect_element_EcRNetGetDCName_rgchDomainController_(tvbuff_t *tvb _U_, in
 static int
 mapi_dissect_EcRNetGetDCName_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint32 status;
+	uint32_t status;
 
 	di->dcerpc_procedure_name="EcRNetGetDCName";
 	offset = mapi_dissect_element_EcRNetGetDCName_rgchDomainController(tvb, offset, pinfo, tree, di, drep);
@@ -44500,7 +44501,7 @@ mapi_dissect_EcRNetGetDCName_response(tvbuff_t *tvb _U_, int offset _U_, packet_
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_werror, &status);
 
 	if (status != 0)
-		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str(status, WERR_errors, "Unknown DOS error 0x%08x"));
+		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str_ext(status, &WERR_errors_ext, "Unknown DOS error 0x%08x"));
 
 	return offset;
 }
@@ -44649,7 +44650,7 @@ mapi_dissect_element_EcDoRpcExt_pulTransTime_(tvbuff_t *tvb _U_, int offset _U_,
 static int
 mapi_dissect_EcDoRpcExt_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint32 status;
+	uint32_t status;
 
 	di->dcerpc_procedure_name="EcDoRpcExt";
 	offset = mapi_dissect_element_EcDoRpcExt_pcxh(tvb, offset, pinfo, tree, di, drep);
@@ -44670,7 +44671,7 @@ mapi_dissect_EcDoRpcExt_response(tvbuff_t *tvb _U_, int offset _U_, packet_info 
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_werror, &status);
 
 	if (status != 0)
-		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str(status, WERR_errors, "Unknown DOS error 0x%08x"));
+		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str_ext(status, &WERR_errors_ext, "Unknown DOS error 0x%08x"));
 
 	return offset;
 }
@@ -44988,7 +44989,7 @@ mapi_dissect_element_EcDoConnectEx_pcbAuxOut_(tvbuff_t *tvb _U_, int offset _U_,
 static int
 mapi_dissect_EcDoConnectEx_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint32 status;
+	uint32_t status;
 
 	di->dcerpc_procedure_name="EcDoConnectEx";
 	offset = mapi_dissect_element_EcDoConnectEx_handle(tvb, offset, pinfo, tree, di, drep);
@@ -45030,7 +45031,7 @@ mapi_dissect_EcDoConnectEx_response(tvbuff_t *tvb _U_, int offset _U_, packet_in
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_werror, &status);
 
 	if (status != 0)
-		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str(status, WERR_errors, "Unknown DOS error 0x%08x"));
+		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str_ext(status, &WERR_errors_ext, "Unknown DOS error 0x%08x"));
 
 	return offset;
 }
@@ -45231,7 +45232,7 @@ mapi_dissect_element_EcDoRpcExt2_pulTransTime_(tvbuff_t *tvb _U_, int offset _U_
 static int
 mapi_dissect_EcDoRpcExt2_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint32 status;
+	uint32_t status;
 
 	di->dcerpc_procedure_name="EcDoRpcExt2";
 	offset = mapi_dissect_element_EcDoRpcExt2_pcxh(tvb, offset, pinfo, tree, di, drep);
@@ -45258,7 +45259,7 @@ mapi_dissect_EcDoRpcExt2_response(tvbuff_t *tvb _U_, int offset _U_, packet_info
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_werror, &status);
 
 	if (status != 0)
-		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str(status, WERR_errors, "Unknown DOS error 0x%08x"));
+		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str_ext(status, &WERR_errors_ext, "Unknown DOS error 0x%08x"));
 
 	return offset;
 }
@@ -45326,7 +45327,7 @@ mapi_dissect_element_EcDoAsyncConnect_pacxh_(tvbuff_t *tvb _U_, int offset _U_, 
 static int
 mapi_dissect_EcDoAsyncConnect_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint32 status;
+	uint32_t status;
 
 	di->dcerpc_procedure_name="EcDoAsyncConnect";
 	offset = mapi_dissect_element_EcDoAsyncConnect_pacxh(tvb, offset, pinfo, tree, di, drep);
@@ -45335,7 +45336,7 @@ mapi_dissect_EcDoAsyncConnect_response(tvbuff_t *tvb _U_, int offset _U_, packet
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_werror, &status);
 
 	if (status != 0)
-		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str(status, WERR_errors, "Unknown DOS error 0x%08x"));
+		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str_ext(status, &WERR_errors_ext, "Unknown DOS error 0x%08x"));
 
 	return offset;
 }
@@ -45398,7 +45399,7 @@ mapi_dissect_element_EcDoAsyncWait_pulFlagsOut_(tvbuff_t *tvb _U_, int offset _U
 static int
 mapi_dissect_EcDoAsyncWait_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint32 status;
+	uint32_t status;
 
 	di->dcerpc_procedure_name="EcDoAsyncWait";
 	offset = mapi_dissect_element_EcDoAsyncWait_pulFlagsOut(tvb, offset, pinfo, tree, di, drep);
@@ -45407,7 +45408,7 @@ mapi_dissect_EcDoAsyncWait_response(tvbuff_t *tvb _U_, int offset _U_, packet_in
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_werror, &status);
 
 	if (status != 0)
-		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str(status, WERR_errors, "Unknown DOS error 0x%08x"));
+		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str_ext(status, &WERR_errors_ext, "Unknown DOS error 0x%08x"));
 
 	return offset;
 }
@@ -45463,7 +45464,7 @@ mapi_dissect_element_EcDoAsyncConnectEx_pacxh_(tvbuff_t *tvb _U_, int offset _U_
 static int
 mapi_dissect_EcDoAsyncConnectEx_response(tvbuff_t *tvb _U_, int offset _U_, packet_info *pinfo _U_, proto_tree *tree _U_, dcerpc_info* di _U_, uint8_t *drep _U_)
 {
-	guint32 status;
+	uint32_t status;
 
 	di->dcerpc_procedure_name="EcDoAsyncConnectEx";
 	offset = mapi_dissect_element_EcDoAsyncConnectEx_pacxh(tvb, offset, pinfo, tree, di, drep);
@@ -45472,7 +45473,7 @@ mapi_dissect_EcDoAsyncConnectEx_response(tvbuff_t *tvb _U_, int offset _U_, pack
 	offset = dissect_ndr_uint32(tvb, offset, pinfo, tree, di, drep, hf_mapi_werror, &status);
 
 	if (status != 0)
-		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str(status, WERR_errors, "Unknown DOS error 0x%08x"));
+		col_append_fstr(pinfo->cinfo, COL_INFO, ", Error: %s", val_to_str_ext(status, &WERR_errors_ext, "Unknown DOS error 0x%08x"));
 
 	return offset;
 }
@@ -45539,11 +45540,11 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_AUX_HEADER_Size,
 	  { "Size", "mapi.AUX_HEADER.Size", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_AUX_HEADER_TYPE_ENUM_Type,
-	  { "Type", "mapi.AUX_HEADER_TYPE_ENUM.Type", FT_UINT8, BASE_DEC, VALS(mapi_AUX_HEADER_TYPE_1_vals), 0, NULL, HFILL }},
+	  { "Type", "mapi.AUX_HEADER_TYPE_ENUM.Type", FT_UINT8, BASE_HEX, VALS(mapi_AUX_HEADER_TYPE_1_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_AUX_HEADER_TYPE_ENUM_Type_2,
-	  { "Type 2", "mapi.AUX_HEADER_TYPE_ENUM.Type_2", FT_UINT8, BASE_DEC, VALS(mapi_AUX_HEADER_TYPE_2_vals), 0, NULL, HFILL }},
+	  { "Type 2", "mapi.AUX_HEADER_TYPE_ENUM.Type_2", FT_UINT8, BASE_HEX, VALS(mapi_AUX_HEADER_TYPE_2_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_AUX_HEADER_Version,
-	  { "Version", "mapi.AUX_HEADER.Version", FT_UINT8, BASE_DEC, VALS(mapi_AUX_VERSION_vals), 0, NULL, HFILL }},
+	  { "Version", "mapi.AUX_HEADER.Version", FT_UINT8, BASE_HEX, VALS(mapi_AUX_VERSION_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_AUX_HEADER_hdrType,
 	  { "HdrType", "mapi.AUX_HEADER.hdrType", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_AUX_OSVERSIONINFO_BuildNumber,
@@ -45585,7 +45586,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_AUX_PERF_CLIENTINFO_ClientIPV6,
 	  { "ClientIPV6", "mapi.AUX_PERF_CLIENTINFO.ClientIPV6", FT_IPv6, BASE_NONE, NULL, 0, "NULL", HFILL }},
 	{ &hf_mapi_AUX_PERF_CLIENTINFO_ClientMode,
-	  { "ClientMode", "mapi.AUX_PERF_CLIENTINFO.ClientMode", FT_UINT16, BASE_DEC, VALS(mapi_ClientMode_vals), 0, NULL, HFILL }},
+	  { "ClientMode", "mapi.AUX_PERF_CLIENTINFO.ClientMode", FT_UINT16, BASE_HEX, VALS(mapi_ClientMode_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_AUX_PERF_CLIENTINFO_MacAddressEther,
 	  { "MacAddress", "mapi.AUX_PERF_CLIENTINFO.MacAddress", FT_ETHER, BASE_NONE, NULL, 0, "NULL", HFILL }},
 	{ &hf_mapi_AUX_PERF_CLIENTINFO_MacAddressOffset,
@@ -45631,7 +45632,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_AUX_PERF_FAILURE_Reserved,
 	  { "Reserved", "mapi.AUX_PERF_FAILURE.Reserved", FT_UINT8, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_AUX_PERF_FAILURE_ResultCode,
-	  { "ResultCode", "mapi.AUX_PERF_FAILURE.ResultCode", FT_UINT32, BASE_DEC, VALS(mapi_MAPISTATUS_vals), 0, NULL, HFILL }},
+	  { "ResultCode", "mapi.AUX_PERF_FAILURE.ResultCode", FT_UINT32, BASE_HEX, VALS(mapi_MAPISTATUS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_AUX_PERF_FAILURE_ServerID,
 	  { "ServerID", "mapi.AUX_PERF_FAILURE.ServerID", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_AUX_PERF_FAILURE_SessionID,
@@ -45653,7 +45654,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_AUX_PERF_FAILURE_V2_Reserved_2,
 	  { "Reserved 2", "mapi.AUX_PERF_FAILURE_V2.Reserved_2", FT_UINT8, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_AUX_PERF_FAILURE_V2_ResultCode,
-	  { "ResultCode", "mapi.AUX_PERF_FAILURE_V2.ResultCode", FT_UINT32, BASE_DEC, VALS(mapi_MAPISTATUS_vals), 0, NULL, HFILL }},
+	  { "ResultCode", "mapi.AUX_PERF_FAILURE_V2.ResultCode", FT_UINT32, BASE_HEX, VALS(mapi_MAPISTATUS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_AUX_PERF_FAILURE_V2_ServerID,
 	  { "ServerID", "mapi.AUX_PERF_FAILURE_V2.ServerID", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_AUX_PERF_FAILURE_V2_SessionID,
@@ -45749,7 +45750,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_AUX_PERF_SERVERINFO_ServerNameOffset,
 	  { "ServerNameOffset", "mapi.AUX_PERF_SERVERINFO.ServerNameOffset", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_AUX_PERF_SERVERINFO_ServerType,
-	  { "ServerType", "mapi.AUX_PERF_SERVERINFO.ServerType", FT_UINT16, BASE_DEC, VALS(mapi_SERVERINFO_ServerType_vals), 0, NULL, HFILL }},
+	  { "ServerType", "mapi.AUX_PERF_SERVERINFO.ServerType", FT_UINT16, BASE_HEX, VALS(mapi_SERVERINFO_ServerType_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_AUX_PERF_SESSIONINFO_Reserved,
 	  { "Reserved", "mapi.AUX_PERF_SESSIONINFO.Reserved", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_AUX_PERF_SESSIONINFO_SessionGuid,
@@ -46113,7 +46114,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_DeleteProps_req_PropertyTagCount,
 	  { "PropertyTagCount", "mapi.DeleteProps_req.PropertyTagCount", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_DeleteProps_req_tags,
-	  { "Tags", "mapi.DeleteProps_req.tags", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "Tags", "mapi.DeleteProps_req.tags", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_EXORGINFO_OrgFlags_PUBLIC_FOLDERS_ENABLED,
 	  { "PUBLIC FOLDERS ENABLED", "mapi.EXORGINFO_OrgFlags.PUBLIC_FOLDERS_ENABLED", FT_BOOLEAN, 32, TFS(&EXORGINFO_OrgFlags_PUBLIC_FOLDERS_ENABLED_tfs), ( 0x00000001 ), NULL, HFILL }},
 	{ &hf_mapi_EcDoRpcMapiRequest_opnum,
@@ -46177,7 +46178,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_FolderCreatedNotification_TagCount,
 	  { "TagCount", "mapi.FolderCreatedNotification.TagCount", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_FolderCreatedNotification_Tags,
-	  { "Tags", "mapi.FolderCreatedNotification.Tags", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "Tags", "mapi.FolderCreatedNotification.Tags", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_FolderDeletedNotification_FID,
 	  { "FID", "mapi.FolderDeletedNotification.FID", FT_UINT64, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_FolderDeletedNotification_ParentFID,
@@ -46187,7 +46188,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_FolderModifiedNotification_1010_TagCount,
 	  { "TagCount", "mapi.FolderModifiedNotification_1010.TagCount", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_FolderModifiedNotification_1010_Tags,
-	  { "Tags", "mapi.FolderModifiedNotification_1010.Tags", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "Tags", "mapi.FolderModifiedNotification_1010.Tags", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_FolderModifiedNotification_1010_TotalMessageCount,
 	  { "TotalMessageCount", "mapi.FolderModifiedNotification_1010.TotalMessageCount", FT_UINT32, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_FolderModifiedNotification_10_FID,
@@ -46195,13 +46196,13 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_FolderModifiedNotification_10_TagCount,
 	  { "TagCount", "mapi.FolderModifiedNotification_10.TagCount", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_FolderModifiedNotification_10_Tags,
-	  { "Tags", "mapi.FolderModifiedNotification_10.Tags", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "Tags", "mapi.FolderModifiedNotification_10.Tags", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_FolderModifiedNotification_2010_FID,
 	  { "FID", "mapi.FolderModifiedNotification_2010.FID", FT_UINT64, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_FolderModifiedNotification_2010_TagCount,
 	  { "TagCount", "mapi.FolderModifiedNotification_2010.TagCount", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_FolderModifiedNotification_2010_Tags,
-	  { "Tags", "mapi.FolderModifiedNotification_2010.Tags", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "Tags", "mapi.FolderModifiedNotification_2010.Tags", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_FolderModifiedNotification_2010_UnreadMessageCount,
 	  { "UnreadMessageCount", "mapi.FolderModifiedNotification_2010.UnreadMessageCount", FT_UINT32, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_FolderModifiedNotification_3010_FID,
@@ -46209,7 +46210,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_FolderModifiedNotification_3010_TagCount,
 	  { "TagCount", "mapi.FolderModifiedNotification_3010.TagCount", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_FolderModifiedNotification_3010_Tags,
-	  { "Tags", "mapi.FolderModifiedNotification_3010.Tags", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "Tags", "mapi.FolderModifiedNotification_3010.Tags", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_FolderModifiedNotification_3010_TotalMessageCount,
 	  { "TotalMessageCount", "mapi.FolderModifiedNotification_3010.TotalMessageCount", FT_UINT32, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_FolderModifiedNotification_3010_UnreadMessageCount,
@@ -46317,7 +46318,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_GetPropList_repl_count,
 	  { "Count", "mapi.GetPropList_repl.count", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_GetPropList_repl_tags,
-	  { "Tags", "mapi.GetPropList_repl.tags", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "Tags", "mapi.GetPropList_repl.tags", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_GetPropsAll_repl_InputHandleIndex,
 	  { "InputHandleIndex", "mapi.GetPropsAll_repl.InputHandleIndex", FT_UINT8, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_GetPropsAll_repl_ReturnValue,
@@ -46351,7 +46352,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_GetProps_req_prop_count,
 	  { "Prop Count", "mapi.GetProps_req.prop_count", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_GetProps_req_properties,
-	  { "Properties", "mapi.GetProps_req.properties", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "Properties", "mapi.GetProps_req.properties", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_GetReceiveFolderTable_repl_cValues,
 	  { "CValues", "mapi.GetReceiveFolderTable_repl.cValues", FT_UINT32, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_GetReceiveFolderTable_repl_entries,
@@ -46571,7 +46572,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_MessageCreatedNotification_TagCount,
 	  { "TagCount", "mapi.MessageCreatedNotification.TagCount", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_MessageCreatedNotification_Tags,
-	  { "Tags", "mapi.MessageCreatedNotification.Tags", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "Tags", "mapi.MessageCreatedNotification.Tags", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_MessageDeletedNotification_FID,
 	  { "FID", "mapi.MessageDeletedNotification.FID", FT_UINT64, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_MessageDeletedNotification_MID,
@@ -46583,7 +46584,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_MessageModifiedNotification_TagCount,
 	  { "TagCount", "mapi.MessageModifiedNotification.TagCount", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_MessageModifiedNotification_Tags,
-	  { "Tags", "mapi.MessageModifiedNotification.Tags", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "Tags", "mapi.MessageModifiedNotification.Tags", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_MessageMoveCopyNotification_FID,
 	  { "FID", "mapi.MessageMoveCopyNotification.FID", FT_UINT64, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_MessageMoveCopyNotification_MID,
@@ -46599,7 +46600,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_ModifyPermissions_req_rowList,
 	  { "RowList", "mapi.ModifyPermissions_req.rowList", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_ModifyRecipientRow_RecipClass,
-	  { "RecipClass", "mapi.ModifyRecipientRow.RecipClass", FT_UINT8, BASE_DEC, VALS(mapi_ulRecipClass_vals), 0, NULL, HFILL }},
+	  { "RecipClass", "mapi.ModifyRecipientRow.RecipClass", FT_UINT8, BASE_HEX, VALS(mapi_ulRecipClass_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_ModifyRecipientRow_RecipientRow,
 	  { "RecipientRow", "mapi.ModifyRecipientRow.RecipientRow", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_ModifyRecipientRow_idx,
@@ -46611,7 +46612,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_ModifyRecipients_req_prop_count,
 	  { "Prop Count", "mapi.ModifyRecipients_req.prop_count", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_ModifyRecipients_req_properties,
-	  { "Properties", "mapi.ModifyRecipients_req.properties", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "Properties", "mapi.ModifyRecipients_req.properties", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_ModifyRulesFlag_ModifyRulesFlag_Replace,
 	  { "ModifyRulesFlag Replace", "mapi.ModifyRulesFlag.ModifyRulesFlag_Replace", FT_BOOLEAN, 8, TFS(&ModifyRulesFlag_ModifyRulesFlag_Replace_tfs), ( 0x01 ), NULL, HFILL }},
 	{ &hf_mapi_ModifyRules_req_ModifyRulesFlags,
@@ -46743,7 +46744,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_OpenEmbeddedMessage_repl_NormalizedSubject,
 	  { "NormalizedSubject", "mapi.OpenEmbeddedMessage_repl.NormalizedSubject", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_OpenEmbeddedMessage_repl_RecipientColumns,
-	  { "RecipientColumns", "mapi.OpenEmbeddedMessage_repl.RecipientColumns", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "RecipientColumns", "mapi.OpenEmbeddedMessage_repl.RecipientColumns", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_OpenEmbeddedMessage_repl_RecipientCount,
 	  { "RecipientCount", "mapi.OpenEmbeddedMessage_repl.RecipientCount", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_OpenEmbeddedMessage_repl_RecipientRows,
@@ -46757,7 +46758,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_OpenEmbeddedMessage_req_CodePageId,
 	  { "CodePageId", "mapi.OpenEmbeddedMessage_req.CodePageId", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_OpenEmbeddedMessage_req_OpenModeFlags,
-	  { "OpenModeFlags", "mapi.OpenEmbeddedMessage_req.OpenModeFlags", FT_UINT8, BASE_DEC, VALS(mapi_OpenEmbeddedMessage_OpenModeFlags_vals), 0, NULL, HFILL }},
+	  { "OpenModeFlags", "mapi.OpenEmbeddedMessage_req.OpenModeFlags", FT_UINT8, BASE_HEX, VALS(mapi_OpenEmbeddedMessage_OpenModeFlags_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_OpenFlags_ALTERNATE_SERVER,
 	  { "ALTERNATE SERVER", "mapi.OpenFlags.ALTERNATE_SERVER", FT_BOOLEAN, 32, TFS(&OpenFlags_ALTERNATE_SERVER_tfs), ( 0x100 ), NULL, HFILL }},
 	{ &hf_mapi_OpenFlags_HOME_LOGON,
@@ -46813,13 +46814,13 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_OpenMessage_Success_recipients,
 	  { "Recipients", "mapi.OpenMessage_Success.recipients", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_OpenMessage_recipients_RecipClass,
-	  { "RecipClass", "mapi.OpenMessage_recipients.RecipClass", FT_UINT8, BASE_DEC, VALS(mapi_ulRecipClass_vals), 0, NULL, HFILL }},
+	  { "RecipClass", "mapi.OpenMessage_recipients.RecipClass", FT_UINT8, BASE_HEX, VALS(mapi_ulRecipClass_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_OpenMessage_recipients_RecipientRow,
 	  { "RecipientRow", "mapi.OpenMessage_recipients.RecipientRow", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_OpenMessage_recipients_Reserved,
 	  { "Reserved", "mapi.OpenMessage_recipients.Reserved", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_OpenMessage_recipients_codepage,
-	  { "Codepage", "mapi.OpenMessage_recipients.codepage", FT_UINT16, BASE_DEC, VALS(mapi_CODEPAGEID_vals), 0, NULL, HFILL }},
+	  { "Codepage", "mapi.OpenMessage_recipients.codepage", FT_UINT16, BASE_HEX, VALS(mapi_CODEPAGEID_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_OpenMessage_repl_OutputHandleIndex,
 	  { "OutputHandleIndex", "mapi.OpenMessage_repl.OutputHandleIndex", FT_UINT8, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_OpenMessage_repl_ReturnValue,
@@ -46855,7 +46856,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_OpenRecipientRow_RecipientRow,
 	  { "RecipientRow", "mapi.OpenRecipientRow.RecipientRow", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_OpenRecipientRow_RecipientType,
-	  { "RecipientType", "mapi.OpenRecipientRow.RecipientType", FT_UINT8, BASE_DEC, VALS(mapi_ulRecipClass_vals), 0, NULL, HFILL }},
+	  { "RecipientType", "mapi.OpenRecipientRow.RecipientType", FT_UINT8, BASE_HEX, VALS(mapi_ulRecipClass_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_OpenRecipientRow_Reserved,
 	  { "Reserved", "mapi.OpenRecipientRow.Reserved", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_OpenStream_repl_StreamSize,
@@ -46863,7 +46864,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_OpenStream_req_OpenModeFlags,
 	  { "OpenModeFlags", "mapi.OpenStream_req.OpenModeFlags", FT_UINT8, BASE_DEC, VALS(mapi_OpenStream_OpenModeFlags_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_OpenStream_req_PropertyTag,
-	  { "PropertyTag", "mapi.OpenStream_req.PropertyTag", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "PropertyTag", "mapi.OpenStream_req.PropertyTag", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_OptionsData_HelpFileName_HelpFileName,
 	  { "HelpFileName", "mapi.OptionsData_HelpFileName.HelpFileName", FT_STRING, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_OptionsData_repl_HelpFile,
@@ -46885,7 +46886,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_Pending_repl_SessionIndex,
 	  { "SessionIndex", "mapi.Pending_repl.SessionIndex", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_PermissionData_PermissionDataFlags,
-	  { "PermissionDataFlags", "mapi.PermissionData.PermissionDataFlags", FT_UINT8, BASE_DEC, VALS(mapi_ulRowFlags_vals), 0, NULL, HFILL }},
+	  { "PermissionDataFlags", "mapi.PermissionData.PermissionDataFlags", FT_UINT8, BASE_HEX, VALS(mapi_ulRowFlags_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_PermissionData_lpProps,
 	  { "LpProps", "mapi.PermissionData.lpProps", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_PermissionsTableFlags_IncludeFreeBusy,
@@ -46897,11 +46898,11 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_Progress_req_WantCancel,
 	  { "WantCancel", "mapi.Progress_req.WantCancel", FT_UINT8, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_PropertyProblem_error_code,
-	  { "Error Code", "mapi.PropertyProblem.error_code", FT_UINT32, BASE_DEC, VALS(mapi_MAPISTATUS_vals), 0, NULL, HFILL }},
+	  { "Error Code", "mapi.PropertyProblem.error_code", FT_UINT32, BASE_HEX, VALS(mapi_MAPISTATUS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_PropertyProblem_index,
 	  { "Index", "mapi.PropertyProblem.index", FT_UINT32, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_PropertyProblem_property_tag,
-	  { "Property Tag", "mapi.PropertyProblem.property_tag", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "Property Tag", "mapi.PropertyProblem.property_tag", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_PublicFolderIsGhosted_repl_Ghost,
 	  { "Ghost", "mapi.PublicFolderIsGhosted_repl.Ghost", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_PublicFolderIsGhosted_repl_IsGhosted,
@@ -46911,7 +46912,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_QueryColumnsAll_repl_PropertyTagCount,
 	  { "PropertyTagCount", "mapi.QueryColumnsAll_repl.PropertyTagCount", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_QueryColumnsAll_repl_PropertyTags,
-	  { "PropertyTags", "mapi.QueryColumnsAll_repl.PropertyTags", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "PropertyTags", "mapi.QueryColumnsAll_repl.PropertyTags", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_QueryFlags_NoIds,
 	  { "NoIds", "mapi.QueryFlags.NoIds", FT_BOOLEAN, 8, TFS(&QueryFlags_NoIds_tfs), ( 0x02 ), NULL, HFILL }},
 	{ &hf_mapi_QueryFlags_NoStrings,
@@ -46989,7 +46990,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_ReadRecipientRow_RecipientRow,
 	  { "RecipientRow", "mapi.ReadRecipientRow.RecipientRow", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_ReadRecipientRow_RecipientType,
-	  { "RecipientType", "mapi.ReadRecipientRow.RecipientType", FT_UINT8, BASE_DEC, VALS(mapi_ulRecipClass_vals), 0, NULL, HFILL }},
+	  { "RecipientType", "mapi.ReadRecipientRow.RecipientType", FT_UINT8, BASE_HEX, VALS(mapi_ulRecipClass_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_ReadRecipientRow_RowId,
 	  { "RowId", "mapi.ReadRecipientRow.RowId", FT_UINT32, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_ReadRecipientRow_ulReserved,
@@ -47017,7 +47018,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_ReceiveFolder_unknown,
 	  { "Unknown", "mapi.ReceiveFolder.unknown", FT_UINT8, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_RecipExchange_addr_type,
-	  { "Addr Type", "mapi.RecipExchange.addr_type", FT_UINT8, BASE_DEC, VALS(mapi_addr_type_vals), 0, NULL, HFILL }},
+	  { "Addr Type", "mapi.RecipExchange.addr_type", FT_UINT8, BASE_HEX, VALS(mapi_addr_type_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_RecipExchange_organization_length,
 	  { "Organization Length", "mapi.RecipExchange.organization_length", FT_UINT8, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_RecipExchange_username,
@@ -47107,11 +47108,11 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_RopBufferTooSmall_repl_SizeNeeded,
 	  { "SizeNeeded", "mapi.RopBufferTooSmall_repl.SizeNeeded", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_RopInput_RopId,
-	  { "RopId", "mapi.RopInput.RopId", FT_UINT8, BASE_DEC, VALS(mapi_ROP_OPNUM_vals), 0, NULL, HFILL }},
+	  { "RopId", "mapi.RopInput.RopId", FT_UINT8, BASE_HEX, VALS(mapi_ROP_OPNUM_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_RopInput_u,
 	  { "U", "mapi.RopInput.u", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_RopOutput_RopId,
-	  { "RopId", "mapi.RopOutput.RopId", FT_UINT8, BASE_DEC, VALS(mapi_ROP_OPNUM_vals), 0, NULL, HFILL }},
+	  { "RopId", "mapi.RopOutput.RopId", FT_UINT8, BASE_HEX, VALS(mapi_ROP_OPNUM_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_RopOutput_u,
 	  { "U", "mapi.RopOutput.u", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_RopReply_Abort,
@@ -47607,7 +47608,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_RuleData_PropertyValues,
 	  { "PropertyValues", "mapi.RuleData.PropertyValues", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_RuleData_RuleDataFlags,
-	  { "RuleDataFlags", "mapi.RuleData.RuleDataFlags", FT_UINT8, BASE_DEC, VALS(mapi_ulRowFlags_vals), 0, NULL, HFILL }},
+	  { "RuleDataFlags", "mapi.RuleData.RuleDataFlags", FT_UINT8, BASE_HEX, VALS(mapi_ulRowFlags_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_RulesTableFlags_RulesTableFlags_Unicode,
 	  { "RulesTableFlags Unicode", "mapi.RulesTableFlags.RulesTableFlags_Unicode", FT_BOOLEAN, 8, TFS(&RulesTableFlags_RulesTableFlags_Unicode_tfs), ( 0x40 ), NULL, HFILL }},
 	{ &hf_mapi_SBinary_short_cb,
@@ -47639,9 +47640,9 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_SSortOrderSet_cSorts,
 	  { "CSorts", "mapi.SSortOrderSet.cSorts", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_SSortOrder_ulOrder,
-	  { "UlOrder", "mapi.SSortOrder.ulOrder", FT_UINT8, BASE_DEC, VALS(mapi_TABLE_SORT_vals), 0, NULL, HFILL }},
+	  { "UlOrder", "mapi.SSortOrder.ulOrder", FT_UINT8, BASE_HEX, VALS(mapi_TABLE_SORT_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_SSortOrder_ulPropTag,
-	  { "UlPropTag", "mapi.SSortOrder.ulPropTag", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "UlPropTag", "mapi.SSortOrder.ulPropTag", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_SaveChangesAttachment_req_SaveFlags,
 	  { "SaveFlags", "mapi.SaveChangesAttachment_req.SaveFlags", FT_UINT8, BASE_DEC, VALS(mapi_SaveFlags_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_SaveChangesMessage_repl_MessageId,
@@ -47679,7 +47680,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_SearchMessageCreatedNotification_TagCount,
 	  { "TagCount", "mapi.SearchMessageCreatedNotification.TagCount", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_SearchMessageCreatedNotification_Tags,
-	  { "Tags", "mapi.SearchMessageCreatedNotification.Tags", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "Tags", "mapi.SearchMessageCreatedNotification.Tags", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_SearchMessageModifiedNotification_FID,
 	  { "FID", "mapi.SearchMessageModifiedNotification.FID", FT_UINT64, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_SearchMessageModifiedNotification_MID,
@@ -47687,7 +47688,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_SearchMessageModifiedNotification_TagCount,
 	  { "TagCount", "mapi.SearchMessageModifiedNotification.TagCount", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_SearchMessageModifiedNotification_Tags,
-	  { "Tags", "mapi.SearchMessageModifiedNotification.Tags", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "Tags", "mapi.SearchMessageModifiedNotification.Tags", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_SearchMessageRemovedNotification_FID,
 	  { "FID", "mapi.SearchMessageRemovedNotification.FID", FT_UINT64, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_SearchMessageRemovedNotification_MID,
@@ -47747,7 +47748,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_SetColumns_req_prop_count,
 	  { "Prop Count", "mapi.SetColumns_req.prop_count", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_SetColumns_req_properties,
-	  { "Properties", "mapi.SetColumns_req.properties", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "Properties", "mapi.SetColumns_req.properties", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_SetMessageReadFlag_ClientData_ClientData,
 	  { "ClientData", "mapi.SetMessageReadFlag_ClientData.ClientData", FT_UINT8, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_SetMessageReadFlag_LogonId_LogonId,
@@ -47887,7 +47888,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_SyncOpenCollector_req_IsContentsCollector,
 	  { "IsContentsCollector", "mapi.SyncOpenCollector_req.IsContentsCollector", FT_UINT8, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_SyncUploadStateStreamBegin_req_StateProperty,
-	  { "StateProperty", "mapi.SyncUploadStateStreamBegin_req.StateProperty", FT_UINT32, BASE_DEC, VALS(mapi_StateProperty_vals), 0, NULL, HFILL }},
+	  { "StateProperty", "mapi.SyncUploadStateStreamBegin_req.StateProperty", FT_UINT32, BASE_HEX, VALS(mapi_StateProperty_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_SyncUploadStateStreamBegin_req_TransferBufferSize,
 	  { "TransferBufferSize", "mapi.SyncUploadStateStreamBegin_req.TransferBufferSize", FT_UINT32, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_SyncUploadStateStreamContinue_req_StreamDataSize,
@@ -48209,11 +48210,11 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_mapi_SBinaryArray_cValues,
 	  { "CValues", "mapi.mapi_SBinaryArray.cValues", FT_UINT32, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SBitmaskRestriction_relMBR,
-	  { "RelMBR", "mapi.mapi_SBitmaskRestriction.relMBR", FT_UINT8, BASE_DEC, VALS(mapi_relMBR_vals), 0, NULL, HFILL }},
+	  { "RelMBR", "mapi.mapi_SBitmaskRestriction.relMBR", FT_UINT8, BASE_HEX, VALS(mapi_relMBR_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SBitmaskRestriction_ulMask,
 	  { "UlMask", "mapi.mapi_SBitmaskRestriction.ulMask", FT_UINT32, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SBitmaskRestriction_ulPropTag,
-	  { "UlPropTag", "mapi.mapi_SBitmaskRestriction.ulPropTag", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "UlPropTag", "mapi.mapi_SBitmaskRestriction.ulPropTag", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SCommentRestriction_Restriction,
 	  { "Restriction", "mapi.mapi_SCommentRestriction.Restriction", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SCommentRestriction_RestrictionPresent,
@@ -48223,19 +48224,19 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_mapi_SCommentRestriction_TaggedValuesCount,
 	  { "TaggedValuesCount", "mapi.mapi_SCommentRestriction.TaggedValuesCount", FT_UINT8, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SCompareProps_relop,
-	  { "Relop", "mapi.mapi_SCompareProps.relop", FT_UINT8, BASE_DEC, VALS(mapi_CompareRelop_vals), 0, NULL, HFILL }},
+	  { "Relop", "mapi.mapi_SCompareProps.relop", FT_UINT8, BASE_HEX, VALS(mapi_CompareRelop_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SCompareProps_ulPropTag1,
-	  { "UlPropTag1", "mapi.mapi_SCompareProps.ulPropTag1", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "UlPropTag1", "mapi.mapi_SCompareProps.ulPropTag1", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SCompareProps_ulPropTag2,
-	  { "UlPropTag2", "mapi.mapi_SCompareProps.ulPropTag2", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "UlPropTag2", "mapi.mapi_SCompareProps.ulPropTag2", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SContentRestriction_fuzzy,
 	  { "Fuzzy", "mapi.mapi_SContentRestriction.fuzzy", FT_UINT32, BASE_HEX, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SContentRestriction_lpProp,
 	  { "LpProp", "mapi.mapi_SContentRestriction.lpProp", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SContentRestriction_ulPropTag,
-	  { "UlPropTag", "mapi.mapi_SContentRestriction.ulPropTag", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "UlPropTag", "mapi.mapi_SContentRestriction.ulPropTag", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SExistRestriction_ulPropTag,
-	  { "UlPropTag", "mapi.mapi_SExistRestriction.ulPropTag", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "UlPropTag", "mapi.mapi_SExistRestriction.ulPropTag", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SGuidArray_cValues,
 	  { "CValues", "mapi.mapi_SGuidArray.cValues", FT_UINT32, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SGuidArray_lpguid,
@@ -48255,7 +48256,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_mapi_SPLSTRArrayW_strings,
 	  { "Strings", "mapi.mapi_SPLSTRArrayW.strings", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SPropTagArray_aulPropTag,
-	  { "AulPropTag", "mapi.mapi_SPropTagArray.aulPropTag", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "AulPropTag", "mapi.mapi_SPropTagArray.aulPropTag", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SPropTagArray_cValues,
 	  { "CValues", "mapi.mapi_SPropTagArray.cValues", FT_UINT16, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SPropValue_CTR_MVbin,
@@ -48285,7 +48286,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_mapi_SPropValue_CTR_dbl,
 	  { "Dbl", "mapi.mapi_SPropValue_CTR.dbl", FT_INT64, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SPropValue_CTR_err,
-	  { "Err", "mapi.mapi_SPropValue_CTR.err", FT_UINT32, BASE_DEC, VALS(mapi_MAPISTATUS_vals), 0, NULL, HFILL }},
+	  { "Err", "mapi.mapi_SPropValue_CTR.err", FT_UINT32, BASE_HEX, VALS(mapi_MAPISTATUS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SPropValue_CTR_ft,
 	  { "Ft", "mapi.mapi_SPropValue_CTR.ft", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SPropValue_CTR_i,
@@ -48311,7 +48312,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_mapi_SPropValue_array_wrap_wrap,
 	  { "Wrap", "mapi.mapi_SPropValue_array_wrap.wrap", FT_UINT8, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SPropValue_ulPropTag,
-	  { "UlPropTag", "mapi.mapi_SPropValue.ulPropTag", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "UlPropTag", "mapi.mapi_SPropValue.ulPropTag", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SPropValue_value,
 	  { "Value", "mapi.mapi_SPropValue.value", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SPropValue_wrap_wrap,
@@ -48321,7 +48322,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_mapi_SPropertyRestriction_relop,
 	  { "Relop", "mapi.mapi_SPropertyRestriction.relop", FT_UINT8, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SPropertyRestriction_ulPropTag,
-	  { "UlPropTag", "mapi.mapi_SPropertyRestriction.ulPropTag", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "UlPropTag", "mapi.mapi_SPropertyRestriction.ulPropTag", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SRestriction_CTR_resAnd,
 	  { "ResAnd", "mapi.mapi_SRestriction_CTR.resAnd", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SRestriction_CTR_resBitmask,
@@ -48351,15 +48352,15 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_mapi_SRestriction_wrap_wrap,
 	  { "Wrap", "mapi.mapi_SRestriction_wrap.wrap", FT_UINT8, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SSizeRestriction_relop,
-	  { "Relop", "mapi.mapi_SSizeRestriction.relop", FT_UINT8, BASE_DEC, VALS(mapi_CompareRelop_vals), 0, NULL, HFILL }},
+	  { "Relop", "mapi.mapi_SSizeRestriction.relop", FT_UINT8, BASE_HEX, VALS(mapi_CompareRelop_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SSizeRestriction_size,
 	  { "Size", "mapi.mapi_SSizeRestriction.size", FT_UINT32, BASE_DEC, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SSizeRestriction_ulPropTag,
-	  { "UlPropTag", "mapi.mapi_SSizeRestriction.ulPropTag", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "UlPropTag", "mapi.mapi_SSizeRestriction.ulPropTag", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SSubRestriction_res,
 	  { "Res", "mapi.mapi_SSubRestriction.res", FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_SSubRestriction_ulSubObject,
-	  { "UlSubObject", "mapi.mapi_SSubRestriction.ulSubObject", FT_UINT32, BASE_DEC, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
+	  { "UlSubObject", "mapi.mapi_SSubRestriction.ulSubObject", FT_UINT32, BASE_HEX, VALS(mapi_MAPITAGS_vals), 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_name_Name,
 	  { "Name", "mapi.mapi_name.Name", FT_STRING, BASE_NONE, NULL, 0, NULL, HFILL }},
 	{ &hf_mapi_mapi_name_NameSize,
@@ -48415,7 +48416,7 @@ void proto_register_dcerpc_mapi(void)
 	{ &hf_mapi_ulMessageStatus_MSGSTATUS_TAGGED,
 	  { "MSGSTATUS TAGGED", "mapi.ulMessageStatus.MSGSTATUS_TAGGED", FT_BOOLEAN, 32, TFS(&ulMessageStatus_MSGSTATUS_TAGGED_tfs), ( 0x2 ), NULL, HFILL }},
 	{ &hf_mapi_werror,
-	  { "Windows Error", "mapi.werror", FT_UINT32, BASE_HEX, VALS(WERR_errors), 0, NULL, HFILL }},
+	  { "Windows Error", "mapi.werror", FT_UINT32, BASE_HEX|BASE_EXT_STRING, &WERR_errors_ext, 0, NULL, HFILL }},
 	};
 
 

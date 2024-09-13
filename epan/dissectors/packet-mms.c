@@ -22,6 +22,7 @@
 #include <epan/expert.h>
 #include <epan/proto_data.h>
 #include <epan/conversation.h>
+#include <wsutil/array.h>
 
 #include "packet-ber.h"
 #include "packet-acse.h"
@@ -34,7 +35,7 @@
 void proto_register_mms(void);
 void proto_reg_handoff_mms(void);
 
-static bool use_iec61850_mapping = TRUE;
+static bool use_iec61850_mapping = true;
 
 /* Initialize the protocol and registered fields */
 static int proto_mms;
@@ -1175,7 +1176,7 @@ typedef struct mms_actx_private_data_t
     iec61850_8_1_vmd_specific vmd_specific;         /* Numeric representation of decode vmd_specific strings */
     int listOfAccessResult_cnt;                     /* Position in the list, 1 count */
     int data_cnt;                                   /* Number of times data occurred(depth)*/
-    guint16 reported_optflds;                       /* Bitmap over included fields */
+    uint16_t reported_optflds;                       /* Bitmap over included fields */
     proto_item* pdu_item;                           /* The item to append PDU info to */
     int confirmedservice_type;                      /* Requested service */
     int objectclass;
@@ -1292,7 +1293,7 @@ mms_private_data_t* mms_get_private_data(asn1_ctx_t* actx)
 }
 
 /* Helper function to test presence of private data struct */
-static gboolean
+static bool
 mms_has_private_data(asn1_ctx_t* actx)
 {
     packet_info* pinfo = actx->pinfo;
@@ -1300,7 +1301,7 @@ mms_has_private_data(asn1_ctx_t* actx)
 }
 
 static void
-private_data_add_preCinfo(asn1_ctx_t* actx, guint32 val)
+private_data_add_preCinfo(asn1_ctx_t* actx, uint32_t val)
 {
     mms_private_data_t* private_data = (mms_private_data_t*)mms_get_private_data(actx);
     snprintf(private_data->preCinfo, BUFFER_SIZE_PRE, "%02d ", val);
@@ -2667,7 +2668,7 @@ dissect_mms_TimeOfDay(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, 
         uint32_t  len;
         uint32_t  milliseconds;
         uint16_t  days;
-        gchar *	ptime;
+        char *	ptime;
         nstime_t ts;
 
         len = tvb_reported_length_remaining(tvb, offset);
@@ -2695,7 +2696,7 @@ dissect_mms_TimeOfDay(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, 
                 ts.secs = (days + 5113) * 86400 + milliseconds / 1000;
                 ts.nsecs = (milliseconds % 1000) * 1000000U;
 
-                ptime = abs_time_to_str(actx->pinfo->pool, &ts, ABSOLUTE_TIME_UTC, TRUE);
+                ptime = abs_time_to_str(actx->pinfo->pool, &ts, ABSOLUTE_TIME_UTC, true);
                 if(hf_index > 0)
                 {
                         proto_tree_add_string(tree, hf_index, tvb, offset, len, ptime);
@@ -2786,7 +2787,7 @@ dissect_mms_UtcTime(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, as
         uint32_t  fraction;
         uint32_t  nanoseconds;
         nstime_t  ts;
-        gchar *   ptime;
+        char *   ptime;
 
     static int * const TimeQuality_bits[] = {
         &hf_mms_iec61850_timequality80,
@@ -2814,12 +2815,12 @@ dissect_mms_UtcTime(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, as
 
         seconds = tvb_get_ntohl(tvb, offset);
         fraction = tvb_get_ntoh24(tvb, offset+4) * 0x100; /* Only 3 bytes are recommended */
-        nanoseconds = (uint32_t )( ((guint64)fraction * G_GUINT64_CONSTANT(1000000000)) / G_GUINT64_CONSTANT(0x100000000) ) ;
+        nanoseconds = (uint32_t )( ((uint64_t)fraction * UINT64_C(1000000000)) / UINT64_C(0x100000000) ) ;
 
         ts.secs = seconds;
         ts.nsecs = nanoseconds;
 
-        ptime = abs_time_to_str(actx->pinfo->pool, &ts, ABSOLUTE_TIME_UTC, TRUE);
+        ptime = abs_time_to_str(actx->pinfo->pool, &ts, ABSOLUTE_TIME_UTC, true);
 
         if(hf_index > 0)
         {
@@ -3253,7 +3254,7 @@ dissect_mms_Output_Request(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset 
 
 static int
 dissect_mms_T_ap_title(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-        offset=dissect_acse_AP_title(FALSE, tvb, offset, actx, tree, hf_mms_ap_title);
+        offset=dissect_acse_AP_title(false, tvb, offset, actx, tree, hf_mms_ap_title);
 
 
   return offset;
@@ -3263,7 +3264,7 @@ dissect_mms_T_ap_title(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_,
 
 static int
 dissect_mms_T_ap_invocation_id(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-        offset=dissect_acse_AP_invocation_identifier(FALSE, tvb, offset, actx, tree, hf_mms_ap_invocation_id);
+        offset=dissect_acse_AP_invocation_identifier(false, tvb, offset, actx, tree, hf_mms_ap_invocation_id);
 
 
   return offset;
@@ -3273,7 +3274,7 @@ dissect_mms_T_ap_invocation_id(bool implicit_tag _U_, tvbuff_t *tvb _U_, int off
 
 static int
 dissect_mms_T_ae_qualifier(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-        offset=dissect_acse_AE_qualifier(FALSE, tvb, offset, actx, tree, hf_mms_ae_qualifier);
+        offset=dissect_acse_AE_qualifier(false, tvb, offset, actx, tree, hf_mms_ae_qualifier);
 
 
   return offset;
@@ -3283,7 +3284,7 @@ dissect_mms_T_ae_qualifier(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset 
 
 static int
 dissect_mms_T_ae_invocation_id(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-        offset=dissect_acse_AE_invocation_identifier(FALSE, tvb, offset, actx, tree, hf_mms_ae_invocation_id);
+        offset=dissect_acse_AE_invocation_identifier(false, tvb, offset, actx, tree, hf_mms_ae_invocation_id);
 
 
   return offset;
@@ -5462,9 +5463,9 @@ static const ber_choice_t ConfirmedServiceRequest_choice[] = {
 
 static int
 dissect_mms_ConfirmedServiceRequest(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-        gint8    ber_class;
+        int8_t   ber_class;
         bool     pc;
-        gint32   tag;
+        int32_t  tag;
 
         get_ber_identifier(tvb, offset, &ber_class, &pc, &tag);
         mms_actx_private_data_t *mms_priv = (mms_actx_private_data_t *)actx->private_data;
@@ -5715,62 +5716,62 @@ dissect_mms_AccessResult(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U
         bool present;
         do {
             mms_priv->listOfAccessResult_cnt+=1;
-            present = TRUE;
+            present = true;
             switch(mms_priv->listOfAccessResult_cnt){
             case 1: /*RptID*/
                 break;
             case 2: /* Reported OptFlds */
                 break;
-            case 3: /* SeqNum Shall be present if OptFlds.sequence-number is TRUE */
+            case 3: /* SeqNum Shall be present if OptFlds.sequence-number is true */
                 if((mms_priv->reported_optflds & 0x4000) != 0x4000){
                     present = false;
                 }
                 break;
-            case 4: /*TimeOfEntry Shall be present if OptFlds.report-time-stamp is TRUE */
+            case 4: /*TimeOfEntry Shall be present if OptFlds.report-time-stamp is true */
                 if((mms_priv->reported_optflds & 0x2000) != 0x2000){
                     present = false;
                 }
                 break;
-            case 5: /*DatSet Shall be present if OptFlds.data-set-name is TRUE */
+            case 5: /*DatSet Shall be present if OptFlds.data-set-name is true */
                 if((mms_priv->reported_optflds & 0x0800) !=0x0800){
                     present = false;
                 }
                 break;
-            case 6: /*BufOvfl Shall be present if OptFlds.buffer-overflow is TRUE */
+            case 6: /*BufOvfl Shall be present if OptFlds.buffer-overflow is true */
                 if((mms_priv->reported_optflds & 0x0200) !=0x0200){
                     present = false;
                 }
                 break;
-            case 7: /*EntryID Shall be present if OptFlds.entryID is TRUE */
+            case 7: /*EntryID Shall be present if OptFlds.entryID is true */
                 if((mms_priv->reported_optflds & 0x0100) !=0x0100){
                     present = false;
                 }
                 break;
-            case 8: /*ConfRev Shall be present if OptFlds.conf-rev is TRUE */
+            case 8: /*ConfRev Shall be present if OptFlds.conf-rev is true */
                 if((mms_priv->reported_optflds & 0x0080) !=0x0080){
                     present = false;
                 }
                 break;
-            case 9: /*SubSeqNum Shall be present if OptFlds.segmentation is TRUE */
+            case 9: /*SubSeqNum Shall be present if OptFlds.segmentation is true */
                 if((mms_priv->reported_optflds & 0x0040) !=0x0040){
                     present = false;
                 }
                 break;
-            case 10: /*MoreSegmentsFollow Shall be present if OptFlds.segmentation is TRUE */
+            case 10: /*MoreSegmentsFollow Shall be present if OptFlds.segmentation is true */
                 if((mms_priv->reported_optflds & 0x0040) !=0x0040){
                     present = false;
                 }
                 break;
             case 11: /*Inclusion-bitstring Shall be present */
                 break;
-            case 12: /*data-reference(s) Shall be present if OptFlds.data-reference is TRUE */
+            case 12: /*data-reference(s) Shall be present if OptFlds.data-reference is true */
                 if((mms_priv->reported_optflds & 0x0400) !=0x0400){
                     present = false;
                 }
                 break;
             case 13: /*value(s) See AccessResult for value(s) */
                 break;
-            case 14: /*ReasonCode(s) Shall be present if OptFlds OptFlds.reason-for-inclusion is TRUE */
+            case 14: /*ReasonCode(s) Shall be present if OptFlds OptFlds.reason-for-inclusion is true */
                 if((mms_priv->reported_optflds & 0x1000) !=0x1000){
                     present = false;
                 }
@@ -7504,9 +7505,9 @@ static const ber_choice_t ConfirmedServiceResponse_choice[] = {
 
 static int
 dissect_mms_ConfirmedServiceResponse(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-        gint8    ber_class;
+        int8_t   ber_class;
         bool     pc;
-        gint32   tag;
+        int32_t  tag;
 
         get_ber_identifier(tvb, offset, &ber_class, &pc, &tag);
         mms_actx_private_data_t *mms_priv = (mms_actx_private_data_t *)actx->private_data;
@@ -8315,9 +8316,9 @@ static const ber_choice_t MMSpdu_choice[] = {
 int
 dissect_mms_MMSpdu(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
         int branch_taken;
-        gint8    ber_class;
+        int8_t   ber_class;
         bool     pc;
-        gint32   tag;
+        int32_t  tag;
 
         get_ber_identifier(tvb, offset, &ber_class, &pc, &tag);
         mms_actx_private_data_t *mms_priv = (mms_actx_private_data_t *)actx->private_data;
@@ -8406,16 +8407,16 @@ dissect_mms_MMSpdu(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn
                                 proto_item_append_text(mms_priv->pdu_item, " [GetDataDirectoryResponse ]");
                             }else if (mms_priv->mms_trans_p->conf_serv_pdu_type_req == MMS_IEC_61850_CONF_SERV_PDU_READ){
                                 if(mms_priv->mms_trans_p->itemid == IEC61850_ITEM_ID_$BR$_OR_$RP$){
-                                    col_append_fstr(actx->pinfo->cinfo, COL_INFO, "GetRCBValuesResponse");
+                                    col_append_str(actx->pinfo->cinfo, COL_INFO, "GetRCBValuesResponse");
                                     proto_item_append_text(mms_priv->pdu_item, " [GetRCBValuesResponse]");
                                 }else{
-                                    col_append_fstr(actx->pinfo->cinfo, COL_INFO, "GetDataValueResponse");
+                                    col_append_str(actx->pinfo->cinfo, COL_INFO, "GetDataValueResponse");
                                     proto_item_append_text(mms_priv->pdu_item, " [GetDataValueResponse ]");
                                 }
                                 if(mms_priv->success == 1){
-                                    col_append_fstr(actx->pinfo->cinfo, COL_INFO, " success");
+                                    col_append_str(actx->pinfo->cinfo, COL_INFO, " success");
                                 }else{
-                                     col_append_fstr(actx->pinfo->cinfo, COL_INFO, " failure");
+                                     col_append_str(actx->pinfo->cinfo, COL_INFO, " failure");
                                 }
                             } else if (mms_priv->mms_trans_p->conf_serv_pdu_type_req == MMS_IEC_61850_CONF_SERV_PDU_WRITE){
                                 if(mms_priv->mms_trans_p->itemid == IEC61850_ITEM_ID_$BR$_OR_$RP$){
@@ -8443,7 +8444,7 @@ dissect_mms_MMSpdu(bool implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn
                     col_append_fstr(actx->pinfo->cinfo, COL_INFO, "%s%s%s",
                             private_data_get_preCinfo(actx), mms_MMSpdu_vals[branch_taken].strptr, private_data_get_moreCinfo(actx));
             }else{
-                    col_append_fstr(actx->pinfo->cinfo, COL_INFO, "%s",
+                    col_append_str(actx->pinfo->cinfo, COL_INFO,
                             mms_MMSpdu_vals[branch_taken].strptr);
             }
     }
@@ -8464,7 +8465,7 @@ dissect_mms(tvbuff_t* tvb, packet_info* pinfo, proto_tree* parent_tree, void* da
     proto_item* item = NULL;
     proto_tree* tree = NULL;
     asn1_ctx_t asn1_ctx;
-    asn1_ctx_init(&asn1_ctx, ASN1_ENC_BER, TRUE, pinfo);
+    asn1_ctx_init(&asn1_ctx, ASN1_ENC_BER, true, pinfo);
 
     if (parent_tree) {
         item = proto_tree_add_item(parent_tree, proto_mms, tvb, 0, -1, ENC_NA);
@@ -8484,7 +8485,7 @@ dissect_mms(tvbuff_t* tvb, packet_info* pinfo, proto_tree* parent_tree, void* da
         if (use_iec61850_mapping) {
             asn1_ctx.private_data = (void*)wmem_new0(pinfo->pool, mms_actx_private_data_t);
         }
-        offset = dissect_mms_MMSpdu(FALSE, tvb, offset, &asn1_ctx, tree, -1);
+        offset = dissect_mms_MMSpdu(false, tvb, offset, &asn1_ctx, tree, -1);
         if (asn1_ctx.private_data) {
             wmem_free(pinfo->pool, asn1_ctx.private_data);
         }
@@ -11457,7 +11458,7 @@ void proto_register_mms(void) {
     };
 
     /* List of subtrees */
-    static gint* ett[] = {
+    static int* ett[] = {
             &ett_mms,
             &ett_mms_iec61850_quality_bitstring,
             &ett_mms_iec61850_check_bitstring,
@@ -11714,19 +11715,19 @@ dissect_mms_heur(tvbuff_t* tvb, packet_info* pinfo, proto_tree* parent_tree, voi
 {
     /* must check that this really is an mms packet */
     int offset = 0;
-    guint32 length = 0;
-    guint32 oct;
-    gint idx = 0;
+    uint32_t length = 0;
+    uint32_t oct;
+    int idx = 0;
 
-    gint8 tmp_class;
+    int8_t tmp_class;
     bool tmp_pc;
-    gint32 tmp_tag;
+    int32_t tmp_tag;
 
     /* first, check do we have at least 2 bytes (pdu) */
     if (!tvb_bytes_exist(tvb, 0, 2))
         return false;	/* no */
 
-    /* can we recognize MMS PDU ? Return FALSE if  not */
+    /* can we recognize MMS PDU ? Return false if  not */
     /*   get MMS PDU type */
     offset = get_ber_identifier(tvb, offset, &tmp_class, &tmp_pc, &tmp_tag);
 
@@ -11743,7 +11744,7 @@ dissect_mms_heur(tvbuff_t* tvb, packet_info* pinfo, proto_tree* parent_tree, voi
     }
 
     /* check MMS length  */
-    oct = tvb_get_guint8(tvb, offset) & 0x7F;
+    oct = tvb_get_uint8(tvb, offset) & 0x7F;
     if (oct == 0)
         /* MMS requires length after tag so not MMS if indefinite length*/
         return false;
